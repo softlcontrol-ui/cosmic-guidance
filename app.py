@@ -185,7 +185,7 @@ def configure_gemini():
         st.stop()
     
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel('models/gemini-1.5-flash')
+    return genai.GenerativeModel('gemini-2.5-flash')
 
 # 星座を計算
 def get_zodiac_sign(month, day):

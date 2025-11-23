@@ -1,6 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 from datetime import datetime
+import json
+from streamlit_js_eval import streamlit_js_eval, get_page_location
 
 # ページ設定
 st.set_page_config(
@@ -170,6 +172,51 @@ if 'age' not in st.session_state:
     st.session_state.age = None
 if 'zodiac' not in st.session_state:
     st.session_state.zodiac = None
+if 'loaded_from_storage' not in st.session_state:
+    st.session_state.loaded_from_storage = False
+
+# ローカルストレージからデータを読み込む
+def load_from_local_storage():
+    """ブラウザのローカルストレージからデータを読み込む"""
+    try:
+        # JavaScriptを使ってローカルストレージから読み込み
+        js_code = """
+        const data = localStorage.getItem('cosmic_guidance_data');
+        return data;
+        """
+        result = streamlit_js_eval(js_eval=js_code, key='load_storage')
+        
+        if result and result != 'null':
+            data = json.loads(result)
+            st.session_state.birthdate = data.get('birthdate')
+            st.session_state.age = data.get('age')
+            st.session_state.zodiac = data.get('zodiac')
+            st.session_state.messages = data.get('messages', [])
+            return True
+    except:
+        pass
+    return False
+
+# ローカルストレージにデータを保存する
+def save_to_local_storage():
+    """ブラウザのローカルストレージにデータを保存する"""
+    try:
+        save_data = {
+            'birthdate': st.session_state.birthdate,
+            'age': st.session_state.age,
+            'zodiac': st.session_state.zodiac,
+            'messages': st.session_state.messages,
+            'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        json_str = json.dumps(save_data, ensure_ascii=False)
+        
+        # JavaScriptを使ってローカルストレージに保存
+        js_code = f"""
+        localStorage.setItem('cosmic_guidance_data', {json.dumps(json_str)});
+        """
+        streamlit_js_eval(js_eval=js_code, key=f'save_storage_{datetime.now().timestamp()}')
+    except:
+        pass
 
 # Gemini API設定
 def configure_gemini():
@@ -235,6 +282,11 @@ def get_system_prompt():
 def main():
     model = configure_gemini()
     
+    # 初回のみローカルストレージから読み込み
+    if not st.session_state.loaded_from_storage:
+        load_from_local_storage()
+        st.session_state.loaded_from_storage = True
+    
     # ヘッダー
     st.markdown("""
     <div class="main-header">
@@ -280,6 +332,9 @@ def main():
                 "content": welcome_message
             })
             
+            # ローカルストレージに保存
+            save_to_local_storage()
+            
             st.rerun()
     
     else:
@@ -298,11 +353,76 @@ def main():
                 zodiac=st.session_state.zodiac
             ), unsafe_allow_html=True)
             
-            if st.button("🔄 新しいセッションを始める"):
+            st.markdown("---")
+            
+            # 自動保存の説明
+            st.subheader("💾 過去ログ")
+            st.info("""
+            **自動保存機能**
+            
+            会話は自動的にブラウザに保存されます。
+            - ✅ ブラウザを閉じても残ります
+            - ✅ 次回アクセス時に自動復元
+            - ⚠️ ブラウザのデータを削除すると消えます
+            """)
+            
+            # 会話数の表示
+            if len(st.session_state.messages) > 0:
+                st.success(f"📝 保存されている会話数: {len(st.session_state.messages)}件")
+            
+            st.markdown("---")
+            
+            # 手動バックアップ（オプション）
+            if len(st.session_state.messages) > 0:
+                st.subheader("📥 手動バックアップ")
+                save_data = {
+                    "birthdate": st.session_state.birthdate,
+                    "age": st.session_state.age,
+                    "zodiac": st.session_state.zodiac,
+                    "messages": st.session_state.messages,
+                    "saved_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                json_str = json.dumps(save_data, ensure_ascii=False, indent=2)
+                
+                st.download_button(
+                    label="💾 会話をダウンロード",
+                    data=json_str,
+                    file_name=f"cosmic_guidance_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json",
+                    use_container_width=True,
+                    help="念のため、ファイルとしてバックアップできます"
+                )
+            
+            st.markdown("---")
+            
+            # データクリア
+            if st.button("🗑️ すべてのデータを削除", use_container_width=True, type="secondary"):
+                # ローカルストレージをクリア
+                js_code = "localStorage.removeItem('cosmic_guidance_data');"
+                streamlit_js_eval(js_eval=js_code, key=f'clear_storage_{datetime.now().timestamp()}')
+                
+                # セッション状態をクリア
                 st.session_state.messages = []
                 st.session_state.birthdate = None
                 st.session_state.age = None
                 st.session_state.zodiac = None
+                st.session_state.loaded_from_storage = False
+                
+                st.success("✅ データを削除しました")
+                st.rerun()
+            
+            st.markdown("---")
+            
+            if st.button("🔄 新しいセッションを始める", use_container_width=True):
+                # ローカルストレージをクリア
+                js_code = "localStorage.removeItem('cosmic_guidance_data');"
+                streamlit_js_eval(js_eval=js_code, key=f'reset_storage_{datetime.now().timestamp()}')
+                
+                st.session_state.messages = []
+                st.session_state.birthdate = None
+                st.session_state.age = None
+                st.session_state.zodiac = None
+                st.session_state.loaded_from_storage = False
                 st.rerun()
         
         # チャット履歴を表示
@@ -349,6 +469,9 @@ def main():
                             "role": "assistant",
                             "content": assistant_message
                         })
+                        
+                        # ローカルストレージに自動保存
+                        save_to_local_storage()
                         
                     except Exception as e:
                         error_message = f"エラーが発生しました: {str(e)}"

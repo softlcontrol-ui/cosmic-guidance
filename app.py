@@ -179,7 +179,7 @@ if 'current_session_id' not in st.session_state:
 if 'sessions' not in st.session_state:
     st.session_state.sessions = {}
 
-# ローカルストレージからデータを読み込む
+# ローカルストレージからデータを読み込む（✅ 修正版）
 def load_from_local_storage():
     """ブラウザのローカルストレージからデータを読み込む"""
     try:
@@ -191,15 +191,21 @@ def load_from_local_storage():
         result = streamlit_js_eval(js_eval=js_code, key='load_sessions')
         
         if result and result != 'null':
+            # ✅ 修正：1回だけJSON.parse
             sessions_data = json.loads(result)
-            st.session_state.sessions = sessions_data.get('sessions', {})
             
-            # 最後に使ったセッションを復元
-            last_session_id = sessions_data.get('last_session_id')
-            if last_session_id and last_session_id in st.session_state.sessions:
-                load_session(last_session_id)
-            return True
-    except:
+            # ✅ 修正：型チェックを追加
+            if isinstance(sessions_data, dict) and 'sessions' in sessions_data:
+                st.session_state.sessions = sessions_data.get('sessions', {})
+                
+                # 最後に使ったセッションを復元
+                last_session_id = sessions_data.get('last_session_id')
+                if last_session_id and last_session_id in st.session_state.sessions:
+                    load_session(last_session_id)
+                return True
+    except json.JSONDecodeError as e:
+        st.error(f"❌ データ読み込みエラー: {e}")
+    except Exception as e:
         pass
     return False
 
@@ -252,7 +258,7 @@ def load_session(session_id):
         st.session_state.zodiac = session['zodiac']
         st.session_state.messages = session['messages']
 
-# ローカルストレージにデータを保存する
+# ローカルストレージにデータを保存する（✅ 修正版）
 def save_to_local_storage():
     """ブラウザのローカルストレージにデータを保存する（最新5セッションまで）"""
     try:
@@ -273,15 +279,26 @@ def save_to_local_storage():
             'last_session_id': st.session_state.current_session_id,
             'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
+        
+        # ✅ 修正：JSON文字列に1回だけ変換
         json_str = json.dumps(save_data, ensure_ascii=False)
         
-        # JavaScriptを使ってローカルストレージに保存
+        # ✅ 修正：JavaScriptの文字列リテラルとしてエスケープ
+        # バックスラッシュ、シングルクォート、改行をエスケープ
+        escaped_json = json_str.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+        
+        # ✅ 修正：シングルクォートで囲んで保存（二重エンコードなし！）
         js_code = f"""
-        localStorage.setItem('cosmic_guidance_sessions', {json.dumps(json_str)});
+        try {{
+            localStorage.setItem('cosmic_guidance_sessions', '{escaped_json}');
+            console.log('✅ セッション保存成功');
+        }} catch (e) {{
+            console.error('❌ セッション保存失敗:', e);
+        }}
         """
         streamlit_js_eval(js_eval=js_code, key=f'save_sessions_{datetime.now().timestamp()}')
-    except:
-        pass
+    except Exception as e:
+        st.error(f"❌ 保存エラー: {e}")
 
 # Gemini API設定
 def configure_gemini():
@@ -289,68 +306,77 @@ def configure_gemini():
     api_key = st.secrets.get("GEMINI_API_KEY", None)
     
     if not api_key:
-        st.error("⚠️ APIキーが設定されていません。Streamlit Secretsに `GEMINI_API_KEY` を設定してください。")
+        st.error("⚠️ GEMINI_API_KEYが設定されていません")
+        st.info("Streamlit Community Cloudのダッシュボードで、Secrets に `GEMINI_API_KEY` を追加してください")
         st.stop()
     
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel('gemini-2.5-flash')
+    return genai.GenerativeModel('gemini-2.0-flash-exp')
 
-# 星座を計算
-def get_zodiac_sign(month, day):
-    """生年月日から星座を取得"""
-    zodiac_signs = [
-        (1, 20, "山羊座"), (2, 19, "水瓶座"), (3, 21, "魚座"),
-        (4, 20, "牡羊座"), (5, 21, "牡牛座"), (6, 22, "双子座"),
-        (7, 23, "蟹座"), (8, 23, "獅子座"), (9, 23, "乙女座"),
-        (10, 23, "天秤座"), (11, 22, "蠍座"), (12, 22, "射手座"),
-        (12, 31, "山羊座")
-    ]
-    
-    for m, d, sign in zodiac_signs:
-        if month < m or (month == m and day <= d):
-            return sign
-    return "山羊座"
-
-# 年齢と星座を計算
-def calculate_profile(birthdate_str):
-    """生年月日から年齢と星座を計算"""
-    birth = datetime.strptime(birthdate_str, "%Y-%m-%d")
-    today = datetime.now()
-    age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
-    zodiac = get_zodiac_sign(birth.month, birth.day)
-    return age, zodiac
-
-# システムプロンプトを生成
+# システムプロンプト
 def get_system_prompt():
-    """ユーザー情報を含むシステムプロンプト"""
-    if st.session_state.birthdate:
-        return f"""あなたは深い洞察力を持つ運命の導き手です。
-相談者と対話しながら、その人の人生を導いていきます。
+    """システムプロンプトを生成"""
+    birthdate_str = st.session_state.birthdate if st.session_state.birthdate else "未設定"
+    age_str = f"{st.session_state.age}歳" if st.session_state.age else "未設定"
+    zodiac_str = st.session_state.zodiac if st.session_state.zodiac else "未設定"
+    
+    return f"""あなたは神秘的な占い師です。相談者に対して、スピリチュアルで詩的な表現を使いながら、心に響くアドバイスを提供してください。
 
 【相談者の情報】
-- 生年月日: {st.session_state.birthdate}
-- 年齢: {st.session_state.age}歳
-- 星座: {st.session_state.zodiac}
+- 生年月日: {birthdate_str}
+- 年齢: {age_str}
+- 星座: {zodiac_str}
 
-【あなたの役割】
-- 相談者の質問に対して、神秘的で詩的、かつ具体的で実用的なアドバイスを提供する
-- 必要に応じて、星座や年齢の情報を活用する
-- 優しく、しかし力強く語りかける
-- 説教臭くならず、相談者を信じ、背中を押すような言葉を選ぶ
-- 会話は自然に、相談者が求める深さに合わせて応答する
+【回答のスタイル】
+- 神秘的で詩的な表現を使用
+- 宇宙や星、運命といった言葉を織り交ぜる
+- 相談者の悩みに寄り添い、希望を与える
+- 具体的なアドバイスと抽象的なメッセージのバランスを取る
+- 適度な絵文字（✨、🌙、⭐など）を使用
+- 敬語を使い、丁寧な口調で
 
-美しい日本語で、まるで古の賢者が語りかけるように応答してください。
-ただし、簡潔な質問には簡潔に、深い相談には深く応答してください。"""
-    return "あなたは運命の導き手です。"
+【禁止事項】
+- 断定的な未来予測
+- 医療的・法律的アドバイス
+- 相談者を不安にさせる表現"""
 
-# メインアプリ
+# 星座を計算
+def calculate_zodiac(birthdate):
+    """生年月日から星座を計算"""
+    month = birthdate.month
+    day = birthdate.day
+    
+    zodiacs = {
+        (3, 21, 4, 19): "牡羊座 ♈",
+        (4, 20, 5, 20): "牡牛座 ♉",
+        (5, 21, 6, 21): "双子座 ♊",
+        (6, 22, 7, 22): "蟹座 ♋",
+        (7, 23, 8, 22): "獅子座 ♌",
+        (8, 23, 9, 22): "乙女座 ♍",
+        (9, 23, 10, 23): "天秤座 ♎",
+        (10, 24, 11, 22): "蠍座 ♏",
+        (11, 23, 12, 21): "射手座 ♐",
+        (12, 22, 1, 19): "山羊座 ♑",
+        (1, 20, 2, 18): "水瓶座 ♒",
+        (2, 19, 3, 20): "魚座 ♓"
+    }
+    
+    for (start_month, start_day, end_month, end_day), zodiac in zodiacs.items():
+        if (month == start_month and day >= start_day) or (month == end_month and day <= end_day):
+            return zodiac
+    
+    return "魚座 ♓"  # デフォルト
+
+# メイン関数
 def main():
+    # Gemini APIを設定
+    global model
     model = configure_gemini()
     
-    # 初回のみローカルストレージから読み込み
+    # 初回のみローカルストレージからロード
     if not st.session_state.loaded_from_storage:
-        load_from_local_storage()
-        st.session_state.loaded_from_storage = True
+        if load_from_local_storage():
+            st.session_state.loaded_from_storage = True
     
     # ヘッダー
     st.markdown("""
@@ -361,74 +387,74 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # 生年月日が未設定の場合、入力画面を表示
+    # 生年月日入力（初回のみ）
     if st.session_state.birthdate is None:
-        st.info("✨ **運命の導き**へようこそ。\n\nまず、あなたの生年月日を教えてください。")
-        
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            birthdate = st.date_input(
+        with st.form("birthdate_form"):
+            st.markdown("### 🌟 あなたの情報を教えてください")
+            birthdate_input = st.date_input(
                 "生年月日",
-                value=datetime(1990, 1, 1),
                 min_value=datetime(1900, 1, 1),
-                max_value=datetime.now()
+                max_value=datetime.now(),
+                help="あなたの運命の扉を開くために、生年月日をお教えください"
             )
-        
-        if st.button("✨ 対話を始める", use_container_width=True):
-            birthdate_str = birthdate.strftime("%Y-%m-%d")
-            age, zodiac = calculate_profile(birthdate_str)
             
-            st.session_state.birthdate = birthdate_str
-            st.session_state.age = age
-            st.session_state.zodiac = zodiac
+            submit = st.form_submit_button("✨ 運命の扉を開く", use_container_width=True)
             
-            # 新しいセッションを作成
-            create_new_session()
-            
-            # 初回メッセージ
-            welcome_message = f"""✨ ようこそ。
-
-あなたは{st.session_state.age}歳、{st.session_state.zodiac}の方ですね。
-
-私はあなたの運命の導き手です。
-人生の方向性、恋愛、仕事、健康...何でもお聞きください。
-
-今、あなたの心に浮かんでいることは何ですか？"""
-            
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": welcome_message
-            })
-            
-            # ローカルストレージに保存
-            save_to_local_storage()
-            
-            st.rerun()
+            if submit:
+                st.session_state.birthdate = birthdate_input.strftime("%Y-%m-%d")
+                
+                # 年齢を計算
+                today = datetime.now()
+                age = today.year - birthdate_input.year
+                if today.month < birthdate_input.month or (today.month == birthdate_input.month and today.day < birthdate_input.day):
+                    age -= 1
+                st.session_state.age = age
+                
+                # 星座を計算
+                st.session_state.zodiac = calculate_zodiac(birthdate_input)
+                
+                # 新しいセッションを作成
+                create_new_session()
+                
+                # 自動保存
+                save_to_local_storage()
+                
+                st.rerun()
     
     else:
-        # サイドバーにプロフィール表示
+        # サイドバーにプロフィールとセッション管理を表示
         with st.sidebar:
-            st.markdown("""
+            st.markdown("### 👤 あなたのプロフィール")
+            
+            st.markdown(f"""
             <div class="profile-info">
-                <div class="profile-label">あなたのプロフィール</div>
-                <div class="profile-value">🎂 {birthdate}</div>
-                <div class="profile-value">✨ {age}歳</div>
-                <div class="profile-value">♈ {zodiac}</div>
+                <div class="profile-label">🎂 生年月日</div>
+                <div class="profile-value">{st.session_state.birthdate}</div>
             </div>
-            """.format(
-                birthdate=st.session_state.birthdate,
-                age=st.session_state.age,
-                zodiac=st.session_state.zodiac
-            ), unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="profile-info">
+                <div class="profile-label">📅 年齢</div>
+                <div class="profile-value">{st.session_state.age}歳</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="profile-info">
+                <div class="profile-label">⭐ 星座</div>
+                <div class="profile-value">{st.session_state.zodiac}</div>
+            </div>
+            """, unsafe_allow_html=True)
             
             st.markdown("---")
             
-            # 保存されたセッション一覧
-            if len(st.session_state.sessions) > 0:
-                st.subheader("💾 保存されたセッション")
-                st.caption(f"最新{len(st.session_state.sessions)}件まで自動保存")
-                
-                # セッションを新しい順にソート
+            # セッション管理
+            st.subheader("📚 過去のセッション")
+            st.caption(f"最新5件まで自動保存されます（現在: {len(st.session_state.sessions)}件）")
+            
+            if st.session_state.sessions:
+                # セッションを更新日時でソート
                 sorted_sessions = sorted(
                     st.session_state.sessions.items(),
                     key=lambda x: x[1].get('updated_at', x[1]['created_at']),

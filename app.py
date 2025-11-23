@@ -320,20 +320,20 @@ def main():
             # AIの応答を生成
             with st.chat_message("assistant"):
                 with st.spinner("🌌 宇宙と対話中..."):
-               # 会話履歴を構築（Gemini APIでは "assistant" -> "model" に変換）
-   conversation_history = []
-   for msg in st.session_state.messages[:-1]:  # 最新のユーザーメッセージ以外
-       role = "model" if msg["role"] == "assistant" else msg["role"]
-       conversation_history.append({
-           "role": role,
-           "parts": [{"text": msg["content"]}]
-       })
-                    
-                    # システムプロンプトを含めてリクエスト
-                    system_prompt = get_system_prompt()
-                    full_prompt = f"{system_prompt}\n\n【相談者の質問】\n{prompt}"
-                    
                     try:
+                        # 会話履歴を構築（Gemini APIでは "assistant" -> "model" に変換）
+                        conversation_history = []
+                        for msg in st.session_state.messages[:-1]:  # 最新のユーザーメッセージ以外
+                            role = "model" if msg["role"] == "assistant" else msg["role"]
+                            conversation_history.append({
+                                "role": role,
+                                "parts": [{"text": msg["content"]}]
+                            })
+                        
+                        # システムプロンプトを含めてリクエスト
+                        system_prompt = get_system_prompt()
+                        full_prompt = f"{system_prompt}\n\n【相談者の質問】\n{prompt}"
+                        
                         # 会話履歴がある場合は、それを含める
                         if conversation_history:
                             chat = model.start_chat(history=conversation_history)

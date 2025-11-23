@@ -199,14 +199,20 @@ def load_from_local_storage():
 
 # ローカルストレージにデータを保存する
 def save_to_local_storage():
-    """ブラウザのローカルストレージにデータを保存する"""
+    """ブラウザのローカルストレージにデータを保存する（最新50件まで）"""
     try:
+        # 最新50件のみ保持
+        MAX_MESSAGES = 50
+        messages_to_save = st.session_state.messages[-MAX_MESSAGES:] if len(st.session_state.messages) > MAX_MESSAGES else st.session_state.messages
+        
         save_data = {
             'birthdate': st.session_state.birthdate,
             'age': st.session_state.age,
             'zodiac': st.session_state.zodiac,
-            'messages': st.session_state.messages,
-            'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'messages': messages_to_save,
+            'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'message_count': len(messages_to_save),
+            'total_count': len(st.session_state.messages)  # 実際の総会話数
         }
         json_str = json.dumps(save_data, ensure_ascii=False)
         
@@ -358,40 +364,79 @@ def main():
             # 自動保存の説明
             st.subheader("💾 過去ログ")
             st.info("""
-            **自動保存機能**
+            **自動保存機能（最新50件まで）**
             
             会話は自動的にブラウザに保存されます。
+            - ✅ 最新50件まで自動保存
+            - ✅ 51件目以降は古いものから自動削除
             - ✅ ブラウザを閉じても残ります
-            - ✅ 次回アクセス時に自動復元
             - ⚠️ ブラウザのデータを削除すると消えます
+            
+            💡 重要な会話は下の「手動バックアップ」で保存してください！
             """)
             
             # 会話数の表示
             if len(st.session_state.messages) > 0:
-                st.success(f"📝 保存されている会話数: {len(st.session_state.messages)}件")
+                total_messages = len(st.session_state.messages)
+                if total_messages <= 50:
+                    st.success(f"📝 保存中: {total_messages}件")
+                else:
+                    st.warning(f"📝 全会話: {total_messages}件 / 自動保存: 最新50件のみ")
+                    st.caption(f"⚠️ 古い{total_messages - 50}件は自動削除されます")
             
             st.markdown("---")
             
             # 手動バックアップ（オプション）
             if len(st.session_state.messages) > 0:
                 st.subheader("📥 手動バックアップ")
+                st.caption("重要な会話はファイルとして保存できます（全会話が保存されます）")
+                
                 save_data = {
                     "birthdate": st.session_state.birthdate,
                     "age": st.session_state.age,
                     "zodiac": st.session_state.zodiac,
-                    "messages": st.session_state.messages,
-                    "saved_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    "messages": st.session_state.messages,  # 全会話を保存
+                    "saved_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "total_messages": len(st.session_state.messages)
                 }
                 json_str = json.dumps(save_data, ensure_ascii=False, indent=2)
                 
                 st.download_button(
-                    label="💾 会話をダウンロード",
+                    label=f"💾 全会話をダウンロード ({len(st.session_state.messages)}件)",
                     data=json_str,
                     file_name=f"cosmic_guidance_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                     mime="application/json",
                     use_container_width=True,
-                    help="念のため、ファイルとしてバックアップできます"
+                    help="全会話をJSONファイルとして保存します"
                 )
+            
+            st.markdown("---")
+            
+            # バックアップファイルの復元
+            st.subheader("📂 バックアップから復元")
+            uploaded_file = st.file_uploader(
+                "保存したJSONファイルを選択",
+                type=['json'],
+                help="手動バックアップしたファイルから会話を復元できます"
+            )
+            
+            if uploaded_file is not None:
+                try:
+                    load_data = json.load(uploaded_file)
+                    
+                    st.session_state.birthdate = load_data.get("birthdate")
+                    st.session_state.age = load_data.get("age")
+                    st.session_state.zodiac = load_data.get("zodiac")
+                    st.session_state.messages = load_data.get("messages", [])
+                    
+                    # ローカルストレージにも保存（最新50件のみ）
+                    save_to_local_storage()
+                    
+                    st.success(f"✅ {len(st.session_state.messages)}件の会話を復元しました！")
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error(f"❌ ファイルの読み込みに失敗: {str(e)}")
             
             st.markdown("---")
             

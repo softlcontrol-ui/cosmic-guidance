@@ -174,6 +174,10 @@ if 'zodiac' not in st.session_state:
     st.session_state.zodiac = None
 if 'loaded_from_storage' not in st.session_state:
     st.session_state.loaded_from_storage = False
+if 'current_session_id' not in st.session_state:
+    st.session_state.current_session_id = None
+if 'sessions' not in st.session_state:
+    st.session_state.sessions = {}
 
 # ローカルストレージからデータを読み込む
 def load_from_local_storage():
@@ -181,46 +185,101 @@ def load_from_local_storage():
     try:
         # JavaScriptを使ってローカルストレージから読み込み
         js_code = """
-        const data = localStorage.getItem('cosmic_guidance_data');
+        const data = localStorage.getItem('cosmic_guidance_sessions');
         return data;
         """
-        result = streamlit_js_eval(js_eval=js_code, key='load_storage')
+        result = streamlit_js_eval(js_eval=js_code, key='load_sessions')
         
         if result and result != 'null':
-            data = json.loads(result)
-            st.session_state.birthdate = data.get('birthdate')
-            st.session_state.age = data.get('age')
-            st.session_state.zodiac = data.get('zodiac')
-            st.session_state.messages = data.get('messages', [])
+            sessions_data = json.loads(result)
+            st.session_state.sessions = sessions_data.get('sessions', {})
+            
+            # 最後に使ったセッションを復元
+            last_session_id = sessions_data.get('last_session_id')
+            if last_session_id and last_session_id in st.session_state.sessions:
+                load_session(last_session_id)
             return True
     except:
         pass
     return False
 
-# ローカルストレージにデータを保存する
-def save_to_local_storage():
-    """ブラウザのローカルストレージにデータを保存する（最新50件まで）"""
-    try:
-        # 最新50件のみ保持
-        MAX_MESSAGES = 50
-        messages_to_save = st.session_state.messages[-MAX_MESSAGES:] if len(st.session_state.messages) > MAX_MESSAGES else st.session_state.messages
+# 新しいセッションを作成
+def create_new_session():
+    """新しいセッションを作成"""
+    session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    st.session_state.current_session_id = session_id
+    st.session_state.sessions[session_id] = {
+        'id': session_id,
+        'created_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'birthdate': st.session_state.birthdate,
+        'age': st.session_state.age,
+        'zodiac': st.session_state.zodiac,
+        'messages': [],
+        'first_question': None
+    }
+
+# 現在のセッションを保存
+def save_current_session():
+    """現在のセッションを保存"""
+    if st.session_state.current_session_id:
+        # 最初の質問を抽出（ユーザーの最初のメッセージ）
+        first_question = None
+        for msg in st.session_state.messages:
+            if msg['role'] == 'user':
+                first_question = msg['content'][:50] + ('...' if len(msg['content']) > 50 else '')
+                break
         
-        save_data = {
+        st.session_state.sessions[st.session_state.current_session_id] = {
+            'id': st.session_state.current_session_id,
+            'created_at': st.session_state.sessions[st.session_state.current_session_id]['created_at'],
+            'updated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'birthdate': st.session_state.birthdate,
             'age': st.session_state.age,
             'zodiac': st.session_state.zodiac,
-            'messages': messages_to_save,
-            'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'message_count': len(messages_to_save),
-            'total_count': len(st.session_state.messages)  # 実際の総会話数
+            'messages': st.session_state.messages,
+            'message_count': len(st.session_state.messages),
+            'first_question': first_question
+        }
+
+# セッションをロード
+def load_session(session_id):
+    """指定されたセッションをロード"""
+    if session_id in st.session_state.sessions:
+        session = st.session_state.sessions[session_id]
+        st.session_state.current_session_id = session_id
+        st.session_state.birthdate = session['birthdate']
+        st.session_state.age = session['age']
+        st.session_state.zodiac = session['zodiac']
+        st.session_state.messages = session['messages']
+
+# ローカルストレージにデータを保存する
+def save_to_local_storage():
+    """ブラウザのローカルストレージにデータを保存する（最新5セッションまで）"""
+    try:
+        # 現在のセッションを保存
+        save_current_session()
+        
+        # 最新5セッションのみ保持
+        MAX_SESSIONS = 5
+        sorted_sessions = sorted(
+            st.session_state.sessions.items(),
+            key=lambda x: x[1].get('updated_at', x[1]['created_at']),
+            reverse=True
+        )
+        sessions_to_save = dict(sorted_sessions[:MAX_SESSIONS])
+        
+        save_data = {
+            'sessions': sessions_to_save,
+            'last_session_id': st.session_state.current_session_id,
+            'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         json_str = json.dumps(save_data, ensure_ascii=False)
         
         # JavaScriptを使ってローカルストレージに保存
         js_code = f"""
-        localStorage.setItem('cosmic_guidance_data', {json.dumps(json_str)});
+        localStorage.setItem('cosmic_guidance_sessions', {json.dumps(json_str)});
         """
-        streamlit_js_eval(js_eval=js_code, key=f'save_storage_{datetime.now().timestamp()}')
+        streamlit_js_eval(js_eval=js_code, key=f'save_sessions_{datetime.now().timestamp()}')
     except:
         pass
 
@@ -323,6 +382,9 @@ def main():
             st.session_state.age = age
             st.session_state.zodiac = zodiac
             
+            # 新しいセッションを作成
+            create_new_session()
+            
             # 初回メッセージ
             welcome_message = f"""✨ ようこそ。
 
@@ -361,53 +423,98 @@ def main():
             
             st.markdown("---")
             
-            # 自動保存の説明
-            st.subheader("💾 過去ログ")
-            st.info("""
-            **自動保存機能（最新50件まで）**
+            # 保存されたセッション一覧
+            if len(st.session_state.sessions) > 0:
+                st.subheader("💾 保存されたセッション")
+                st.caption(f"最新{len(st.session_state.sessions)}件まで自動保存")
+                
+                # セッションを新しい順にソート
+                sorted_sessions = sorted(
+                    st.session_state.sessions.items(),
+                    key=lambda x: x[1].get('updated_at', x[1]['created_at']),
+                    reverse=True
+                )
+                
+                for session_id, session in sorted_sessions:
+                    # 現在のセッションかどうか
+                    is_current = session_id == st.session_state.current_session_id
+                    
+                    # セッション情報
+                    created = session['created_at']
+                    msg_count = session.get('message_count', len(session.get('messages', [])))
+                    first_q = session.get('first_question', '新しいセッション')
+                    
+                    # ボタンのラベル
+                    label = f"{'🔵 ' if is_current else '📅 '}{created} ({msg_count}件)"
+                    
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        if st.button(
+                            label,
+                            key=f"session_{session_id}",
+                            use_container_width=True,
+                            disabled=is_current,
+                            help=f"最初の質問: {first_q}"
+                        ):
+                            load_session(session_id)
+                            st.rerun()
+                    
+                    with col2:
+                        # 削除ボタン
+                        if st.button("🗑️", key=f"del_{session_id}", help="このセッションを削除"):
+                            del st.session_state.sessions[session_id]
+                            if session_id == st.session_state.current_session_id:
+                                # 現在のセッションを削除した場合、クリア
+                                st.session_state.current_session_id = None
+                                st.session_state.messages = []
+                            save_to_local_storage()
+                            st.rerun()
+                    
+                    # 最初の質問を表示
+                    if first_q:
+                        st.caption(f"💬 {first_q}")
+                    
+                    st.markdown("---")
             
-            会話は自動的にブラウザに保存されます。
-            - ✅ 最新50件まで自動保存
-            - ✅ 51件目以降は古いものから自動削除
-            - ✅ ブラウザを閉じても残ります
-            - ⚠️ ブラウザのデータを削除すると消えます
-            
-            💡 重要な会話は下の「手動バックアップ」で保存してください！
-            """)
-            
-            # 会話数の表示
-            if len(st.session_state.messages) > 0:
-                total_messages = len(st.session_state.messages)
-                if total_messages <= 50:
-                    st.success(f"📝 保存中: {total_messages}件")
-                else:
-                    st.warning(f"📝 全会話: {total_messages}件 / 自動保存: 最新50件のみ")
-                    st.caption(f"⚠️ 古い{total_messages - 50}件は自動削除されます")
+            # 新しいセッション作成
+            if st.button("➕ 新しいセッションを開始", use_container_width=True, type="primary"):
+                # ローカルストレージをクリア
+                js_code = "localStorage.removeItem('cosmic_guidance_sessions');"
+                streamlit_js_eval(js_eval=js_code, key=f'new_session_{datetime.now().timestamp()}')
+                
+                st.session_state.messages = []
+                st.session_state.birthdate = None
+                st.session_state.age = None
+                st.session_state.zodiac = None
+                st.session_state.current_session_id = None
+                st.rerun()
             
             st.markdown("---")
             
             # 手動バックアップ（オプション）
             if len(st.session_state.messages) > 0:
-                st.subheader("📥 手動バックアップ")
-                st.caption("重要な会話はファイルとして保存できます（全会話が保存されます）")
+                st.subheader("📥 現在のセッションをバックアップ")
+                st.caption("現在のセッションをJSONファイルとして保存できます")
                 
                 save_data = {
+                    "session_id": st.session_state.current_session_id,
                     "birthdate": st.session_state.birthdate,
                     "age": st.session_state.age,
                     "zodiac": st.session_state.zodiac,
-                    "messages": st.session_state.messages,  # 全会話を保存
+                    "messages": st.session_state.messages,
+                    "created_at": st.session_state.sessions[st.session_state.current_session_id]['created_at'] if st.session_state.current_session_id in st.session_state.sessions else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "saved_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "total_messages": len(st.session_state.messages)
                 }
                 json_str = json.dumps(save_data, ensure_ascii=False, indent=2)
                 
                 st.download_button(
-                    label=f"💾 全会話をダウンロード ({len(st.session_state.messages)}件)",
+                    label=f"💾 このセッションをダウンロード ({len(st.session_state.messages)}件)",
                     data=json_str,
-                    file_name=f"cosmic_guidance_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    file_name=f"session_{st.session_state.current_session_id}.json",
                     mime="application/json",
                     use_container_width=True,
-                    help="全会話をJSONファイルとして保存します"
+                    help="現在のセッションをJSONファイルとして保存します"
                 )
             
             st.markdown("---")
@@ -417,22 +524,36 @@ def main():
             uploaded_file = st.file_uploader(
                 "保存したJSONファイルを選択",
                 type=['json'],
-                help="手動バックアップしたファイルから会話を復元できます"
+                help="手動バックアップしたファイルから会話を新しいセッションとして復元できます"
             )
             
             if uploaded_file is not None:
                 try:
                     load_data = json.load(uploaded_file)
                     
-                    st.session_state.birthdate = load_data.get("birthdate")
-                    st.session_state.age = load_data.get("age")
-                    st.session_state.zodiac = load_data.get("zodiac")
-                    st.session_state.messages = load_data.get("messages", [])
+                    # 新しいセッションIDを生成
+                    session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
                     
-                    # ローカルストレージにも保存（最新50件のみ）
+                    # セッションデータを作成
+                    st.session_state.sessions[session_id] = {
+                        'id': session_id,
+                        'created_at': load_data.get('created_at', datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                        'updated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'birthdate': load_data.get("birthdate"),
+                        'age': load_data.get("age"),
+                        'zodiac': load_data.get("zodiac"),
+                        'messages': load_data.get("messages", []),
+                        'message_count': len(load_data.get("messages", [])),
+                        'first_question': None
+                    }
+                    
+                    # そのセッションをロード
+                    load_session(session_id)
+                    
+                    # ローカルストレージにも保存
                     save_to_local_storage()
                     
-                    st.success(f"✅ {len(st.session_state.messages)}件の会話を復元しました！")
+                    st.success(f"✅ {len(st.session_state.messages)}件の会話を新しいセッションとして復元しました！")
                     st.rerun()
                     
                 except Exception as e:
@@ -440,35 +561,25 @@ def main():
             
             st.markdown("---")
             
-            # データクリア
-            if st.button("🗑️ すべてのデータを削除", use_container_width=True, type="secondary"):
-                # ローカルストレージをクリア
-                js_code = "localStorage.removeItem('cosmic_guidance_data');"
-                streamlit_js_eval(js_eval=js_code, key=f'clear_storage_{datetime.now().timestamp()}')
-                
-                # セッション状態をクリア
-                st.session_state.messages = []
-                st.session_state.birthdate = None
-                st.session_state.age = None
-                st.session_state.zodiac = None
-                st.session_state.loaded_from_storage = False
-                
-                st.success("✅ データを削除しました")
-                st.rerun()
-            
-            st.markdown("---")
-            
-            if st.button("🔄 新しいセッションを始める", use_container_width=True):
-                # ローカルストレージをクリア
-                js_code = "localStorage.removeItem('cosmic_guidance_data');"
-                streamlit_js_eval(js_eval=js_code, key=f'reset_storage_{datetime.now().timestamp()}')
-                
-                st.session_state.messages = []
-                st.session_state.birthdate = None
-                st.session_state.age = None
-                st.session_state.zodiac = None
-                st.session_state.loaded_from_storage = False
-                st.rerun()
+            # 全データクリア（危険な操作なので最下部に）
+            with st.expander("🗑️ すべてのデータを削除（危険）"):
+                st.warning("この操作は取り消せません。すべてのセッションが削除されます。")
+                if st.button("⚠️ 本当に削除する", use_container_width=True, type="secondary"):
+                    # ローカルストレージをクリア
+                    js_code = "localStorage.removeItem('cosmic_guidance_sessions');"
+                    streamlit_js_eval(js_eval=js_code, key=f'clear_all_{datetime.now().timestamp()}')
+                    
+                    # セッション状態をクリア
+                    st.session_state.messages = []
+                    st.session_state.birthdate = None
+                    st.session_state.age = None
+                    st.session_state.zodiac = None
+                    st.session_state.current_session_id = None
+                    st.session_state.sessions = {}
+                    st.session_state.loaded_from_storage = False
+                    
+                    st.success("✅ すべてのデータを削除しました")
+                    st.rerun()
         
         # チャット履歴を表示
         for message in st.session_state.messages:

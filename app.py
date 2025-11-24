@@ -2,7 +2,8 @@ import streamlit as st
 import google.generativeai as genai
 from datetime import datetime
 import json
-from streamlit_js_eval import streamlit_js_eval, get_page_location
+import uuid
+from supabase import create_client, Client
 
 # ページ設定
 st.set_page_config(
@@ -172,43 +173,66 @@ if 'age' not in st.session_state:
     st.session_state.age = None
 if 'zodiac' not in st.session_state:
     st.session_state.zodiac = None
-if 'loaded_from_storage' not in st.session_state:
-    st.session_state.loaded_from_storage = False
 if 'current_session_id' not in st.session_state:
     st.session_state.current_session_id = None
 if 'sessions' not in st.session_state:
     st.session_state.sessions = {}
+if 'user_id' not in st.session_state:
+    # ユーザーIDを生成（ブラウザごとに固有）
+    st.session_state.user_id = str(uuid.uuid4())
+if 'supabase_loaded' not in st.session_state:
+    st.session_state.supabase_loaded = False
 
-# ローカルストレージからデータを読み込む
-def load_from_local_storage():
-    """ブラウザのローカルストレージからデータを読み込む"""
+# Supabase接続
+@st.cache_resource
+def get_supabase_client() -> Client:
+    """Supabaseクライアントを取得"""
+    supabase_url = st.secrets.get("SUPABASE_URL", None)
+    supabase_key = st.secrets.get("SUPABASE_KEY", None)
+    
+    if not supabase_url or not supabase_key:
+        st.error("⚠️ Supabase設定が不足しています。secrets.tomlに `SUPABASE_URL` と `SUPABASE_KEY` を設定してください。")
+        st.stop()
+    
+    return create_client(supabase_url, supabase_key)
+
+# Supabaseからデータを読み込む
+def load_from_supabase():
+    """Supabaseからセッションデータを読み込む"""
     try:
-        # JavaScriptを使ってローカルストレージから読み込み
-        js_code = """
-        const data = localStorage.getItem('cosmic_guidance_sessions');
-        return data;
-        """
-        # 動的キーを使用して毎回新しいコンポーネントインスタンスを作成
-        result = streamlit_js_eval(js_eval=js_code, key=f'load_sessions_{datetime.now().timestamp()}')
+        supabase = get_supabase_client()
         
-        if result and result != 'null' and result != 'undefined':
-            try:
-                sessions_data = json.loads(result)
-                st.session_state.sessions = sessions_data.get('sessions', {})
-                
-                # 最後に使ったセッションを復元
-                last_session_id = sessions_data.get('last_session_id')
-                if last_session_id and last_session_id in st.session_state.sessions:
-                    load_session(last_session_id)
-                return True
-            except json.JSONDecodeError:
-                # JSONのパースに失敗した場合はローカルストレージをクリア
-                pass
+        # ユーザーのセッションを取得（最新5件）
+        response = supabase.table('sessions').select('*').eq(
+            'user_id', st.session_state.user_id
+        ).order('updated_at', desc=True).limit(5).execute()
+        
+        if response.data:
+            # セッションデータを復元
+            st.session_state.sessions = {}
+            for session in response.data:
+                session_id = session['session_id']
+                st.session_state.sessions[session_id] = {
+                    'id': session_id,
+                    'created_at': session['created_at'],
+                    'updated_at': session['updated_at'],
+                    'birthdate': session['birthdate'],
+                    'age': session['age'],
+                    'zodiac': session['zodiac'],
+                    'messages': session['messages'],
+                    'message_count': len(session['messages']),
+                    'first_question': session['messages'][0]['content'][:50] if session['messages'] else None
+                }
+            
+            # 最新のセッションをロード
+            if response.data:
+                latest = response.data[0]
+                load_session(latest['session_id'])
+            
+            return True
     except Exception as e:
-        # デバッグ用（本番では削除可能）
-        # st.warning(f"セッション読み込みエラー: {e}")
-        pass
-    return False
+        st.warning(f"⚠️ データ読み込みエラー: {e}")
+        return False
 
 # 新しいセッションを作成
 def create_new_session():
@@ -217,7 +241,8 @@ def create_new_session():
     st.session_state.current_session_id = session_id
     st.session_state.sessions[session_id] = {
         'id': session_id,
-        'created_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'created_at': datetime.now().isoformat(),
+        'updated_at': datetime.now().isoformat(),
         'birthdate': st.session_state.birthdate,
         'age': st.session_state.age,
         'zodiac': st.session_state.zodiac,
@@ -229,7 +254,7 @@ def create_new_session():
 def save_current_session():
     """現在のセッションを保存"""
     if st.session_state.current_session_id:
-        # 最初の質問を抽出（ユーザーの最初のメッセージ）
+        # 最初の質問を抽出
         first_question = None
         for msg in st.session_state.messages:
             if msg['role'] == 'user':
@@ -239,7 +264,7 @@ def save_current_session():
         st.session_state.sessions[st.session_state.current_session_id] = {
             'id': st.session_state.current_session_id,
             'created_at': st.session_state.sessions[st.session_state.current_session_id]['created_at'],
-            'updated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'updated_at': datetime.now().isoformat(),
             'birthdate': st.session_state.birthdate,
             'age': st.session_state.age,
             'zodiac': st.session_state.zodiac,
@@ -259,39 +284,49 @@ def load_session(session_id):
         st.session_state.zodiac = session['zodiac']
         st.session_state.messages = session['messages']
 
-# ローカルストレージにデータを保存する
-def save_to_local_storage():
-    """ブラウザのローカルストレージにデータを保存する（最新5セッションまで）"""
+# Supabaseにデータを保存する
+def save_to_supabase():
+    """Supabaseにデータを保存する"""
     try:
+        if not st.session_state.current_session_id:
+            return
+        
         # 現在のセッションを保存
         save_current_session()
         
-        # 最新5セッションのみ保持
-        MAX_SESSIONS = 5
-        sorted_sessions = sorted(
-            st.session_state.sessions.items(),
-            key=lambda x: x[1].get('updated_at', x[1]['created_at']),
-            reverse=True
-        )
-        sessions_to_save = dict(sorted_sessions[:MAX_SESSIONS])
+        supabase = get_supabase_client()
+        session = st.session_state.sessions[st.session_state.current_session_id]
         
-        save_data = {
-            'sessions': sessions_to_save,
-            'last_session_id': st.session_state.current_session_id,
-            'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # データを準備
+        data = {
+            'user_id': st.session_state.user_id,
+            'session_id': st.session_state.current_session_id,
+            'birthdate': session['birthdate'],
+            'age': session['age'],
+            'zodiac': session['zodiac'],
+            'messages': session['messages'],
+            'updated_at': datetime.now().isoformat()
         }
         
-        # JavaScriptを使ってローカルストレージに保存
-        # Pythonの辞書をJavaScriptオブジェクトとして展開し、JavaScript側でJSON.stringify()
-        js_code = f"""
-        const data = {json.dumps(save_data, ensure_ascii=False)};
-        localStorage.setItem('cosmic_guidance_sessions', JSON.stringify(data));
-        """
-        streamlit_js_eval(js_eval=js_code, key=f'save_sessions_{datetime.now().timestamp()}', want_output=False)
+        # 既存のレコードをチェック
+        existing = supabase.table('sessions').select('id').eq(
+            'user_id', st.session_state.user_id
+        ).eq('session_id', st.session_state.current_session_id).execute()
+        
+        if existing.data:
+            # 更新
+            supabase.table('sessions').update(data).eq(
+                'user_id', st.session_state.user_id
+            ).eq('session_id', st.session_state.current_session_id).execute()
+        else:
+            # 新規作成
+            data['created_at'] = datetime.now().isoformat()
+            supabase.table('sessions').insert(data).execute()
+        
+        return True
     except Exception as e:
-        # デバッグ用（本番では削除可能）
-        # st.warning(f"セッション保存エラー: {e}")
-        pass
+        st.warning(f"⚠️ データ保存エラー: {e}")
+        return False
 
 # Gemini API設定
 def configure_gemini():
@@ -357,10 +392,10 @@ def get_system_prompt():
 def main():
     model = configure_gemini()
     
-    # 初回のみローカルストレージから読み込み
-    if not st.session_state.loaded_from_storage:
-        load_from_local_storage()
-        st.session_state.loaded_from_storage = True
+    # 初回のみSupabaseから読み込み
+    if not st.session_state.supabase_loaded:
+        load_from_supabase()
+        st.session_state.supabase_loaded = True
     
     # ヘッダー
     st.markdown("""
@@ -410,8 +445,8 @@ def main():
                 "content": welcome_message
             })
             
-            # ローカルストレージに保存
-            save_to_local_storage()
+            # Supabaseに保存
+            save_to_supabase()
             
             st.rerun()
     
@@ -436,7 +471,7 @@ def main():
             # 保存されたセッション一覧
             if len(st.session_state.sessions) > 0:
                 st.subheader("💾 保存されたセッション")
-                st.caption(f"最新{len(st.session_state.sessions)}件まで自動保存")
+                st.caption(f"{len(st.session_state.sessions)}件のセッション（Supabase同期）")
                 
                 # セッションを新しい順にソート
                 sorted_sessions = sorted(
@@ -450,7 +485,7 @@ def main():
                     is_current = session_id == st.session_state.current_session_id
                     
                     # セッション情報
-                    created = session['created_at']
+                    created = session['created_at'][:19]  # ISO形式から日時部分を抽出
                     msg_count = session.get('message_count', len(session.get('messages', [])))
                     first_q = session.get('first_question', '新しいセッション')
                     
@@ -472,13 +507,21 @@ def main():
                     with col2:
                         # 削除ボタン
                         if st.button("🗑️", key=f"del_{session_id}", help="このセッションを削除"):
-                            del st.session_state.sessions[session_id]
-                            if session_id == st.session_state.current_session_id:
-                                # 現在のセッションを削除した場合、クリア
-                                st.session_state.current_session_id = None
-                                st.session_state.messages = []
-                            save_to_local_storage()
-                            st.rerun()
+                            try:
+                                # Supabaseから削除
+                                supabase = get_supabase_client()
+                                supabase.table('sessions').delete().eq(
+                                    'user_id', st.session_state.user_id
+                                ).eq('session_id', session_id).execute()
+                                
+                                # ローカルからも削除
+                                del st.session_state.sessions[session_id]
+                                if session_id == st.session_state.current_session_id:
+                                    st.session_state.current_session_id = None
+                                    st.session_state.messages = []
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"削除エラー: {e}")
                     
                     # 最初の質問を表示
                     if first_q:
@@ -488,108 +531,12 @@ def main():
             
             # 新しいセッション作成
             if st.button("➕ 新しいセッションを開始", use_container_width=True, type="primary"):
-                # ローカルストレージをクリア
-                js_code = "localStorage.removeItem('cosmic_guidance_sessions');"
-                streamlit_js_eval(js_eval=js_code, key=f'new_session_{datetime.now().timestamp()}', want_output=False)
-                
                 st.session_state.messages = []
                 st.session_state.birthdate = None
                 st.session_state.age = None
                 st.session_state.zodiac = None
                 st.session_state.current_session_id = None
                 st.rerun()
-            
-            st.markdown("---")
-            
-            # 手動バックアップ（オプション）
-            if len(st.session_state.messages) > 0:
-                st.subheader("📥 現在のセッションをバックアップ")
-                st.caption("現在のセッションをJSONファイルとして保存できます")
-                
-                save_data = {
-                    "session_id": st.session_state.current_session_id,
-                    "birthdate": st.session_state.birthdate,
-                    "age": st.session_state.age,
-                    "zodiac": st.session_state.zodiac,
-                    "messages": st.session_state.messages,
-                    "created_at": st.session_state.sessions[st.session_state.current_session_id]['created_at'] if st.session_state.current_session_id in st.session_state.sessions else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "saved_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "total_messages": len(st.session_state.messages)
-                }
-                json_str = json.dumps(save_data, ensure_ascii=False, indent=2)
-                
-                st.download_button(
-                    label=f"💾 このセッションをダウンロード ({len(st.session_state.messages)}件)",
-                    data=json_str,
-                    file_name=f"session_{st.session_state.current_session_id}.json",
-                    mime="application/json",
-                    use_container_width=True,
-                    help="現在のセッションをJSONファイルとして保存します"
-                )
-            
-            st.markdown("---")
-            
-            # バックアップファイルの復元
-            st.subheader("📂 バックアップから復元")
-            uploaded_file = st.file_uploader(
-                "保存したJSONファイルを選択",
-                type=['json'],
-                help="手動バックアップしたファイルから会話を新しいセッションとして復元できます"
-            )
-            
-            if uploaded_file is not None:
-                try:
-                    load_data = json.load(uploaded_file)
-                    
-                    # 新しいセッションIDを生成
-                    session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    
-                    # セッションデータを作成
-                    st.session_state.sessions[session_id] = {
-                        'id': session_id,
-                        'created_at': load_data.get('created_at', datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-                        'updated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        'birthdate': load_data.get("birthdate"),
-                        'age': load_data.get("age"),
-                        'zodiac': load_data.get("zodiac"),
-                        'messages': load_data.get("messages", []),
-                        'message_count': len(load_data.get("messages", [])),
-                        'first_question': None
-                    }
-                    
-                    # そのセッションをロード
-                    load_session(session_id)
-                    
-                    # ローカルストレージにも保存
-                    save_to_local_storage()
-                    
-                    st.success(f"✅ {len(st.session_state.messages)}件の会話を新しいセッションとして復元しました！")
-                    st.rerun()
-                    
-                except Exception as e:
-                    st.error(f"❌ ファイルの読み込みに失敗: {str(e)}")
-            
-            st.markdown("---")
-            
-            # 全データクリア（危険な操作なので最下部に）
-            with st.expander("🗑️ すべてのデータを削除（危険）"):
-                st.warning("この操作は取り消せません。すべてのセッションが削除されます。")
-                if st.button("⚠️ 本当に削除する", use_container_width=True, type="secondary"):
-                    # ローカルストレージをクリア
-                    js_code = "localStorage.removeItem('cosmic_guidance_sessions');"
-                    streamlit_js_eval(js_eval=js_code, key=f'clear_all_{datetime.now().timestamp()}', want_output=False)
-                    
-                    # セッション状態をクリア
-                    st.session_state.messages = []
-                    st.session_state.birthdate = None
-                    st.session_state.age = None
-                    st.session_state.zodiac = None
-                    st.session_state.current_session_id = None
-                    st.session_state.sessions = {}
-                    st.session_state.loaded_from_storage = False
-                    
-                    st.success("✅ すべてのデータを削除しました")
-                    st.rerun()
         
         # チャット履歴を表示
         for message in st.session_state.messages:
@@ -607,9 +554,9 @@ def main():
             with st.chat_message("assistant"):
                 with st.spinner("🌌 宇宙と対話中..."):
                     try:
-                        # 会話履歴を構築（Gemini APIでは "assistant" -> "model" に変換）
+                        # 会話履歴を構築
                         conversation_history = []
-                        for msg in st.session_state.messages[:-1]:  # 最新のユーザーメッセージ以外
+                        for msg in st.session_state.messages[:-1]:
                             role = "model" if msg["role"] == "assistant" else msg["role"]
                             conversation_history.append({
                                 "role": role,
@@ -636,8 +583,8 @@ def main():
                             "content": assistant_message
                         })
                         
-                        # ローカルストレージに自動保存
-                        save_to_local_storage()
+                        # Supabaseに自動保存
+                        save_to_supabase()
                         
                     except Exception as e:
                         error_message = f"エラーが発生しました: {str(e)}"
@@ -653,6 +600,6 @@ if __name__ == "__main__":
     # フッター
     st.markdown("""
     <footer style='text-align: center; padding: 2rem 0; color: #c0c0c0; font-size: 0.8rem; opacity: 0.7;'>
-        © 2024 運命の導き - Powered by Google Gemini AI
+        © 2024 運命の導き - Powered by Google Gemini AI & Supabase
     </footer>
     """, unsafe_allow_html=True)

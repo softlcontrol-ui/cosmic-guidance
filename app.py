@@ -178,10 +178,37 @@ if 'current_session_id' not in st.session_state:
 if 'sessions' not in st.session_state:
     st.session_state.sessions = {}
 if 'user_id' not in st.session_state:
-    # ユーザーIDを生成（ブラウザごとに固有）
-    st.session_state.user_id = str(uuid.uuid4())
+    st.session_state.user_id = None
 if 'supabase_loaded' not in st.session_state:
     st.session_state.supabase_loaded = False
+
+# user_idをlocalStorageから取得、なければ生成
+def get_or_create_user_id():
+    """localStorageからuser_idを取得、なければ新規生成"""
+    if st.session_state.user_id:
+        return st.session_state.user_id
+    
+    # localStorageから取得を試みる
+    js_code = """
+    const userId = localStorage.getItem('cosmic_guidance_user_id');
+    userId;
+    """
+    result = streamlit_js_eval(js_eval=js_code, key=f'get_user_id_{datetime.now().timestamp()}')
+    
+    if result and result != 'null' and result != 'undefined':
+        st.session_state.user_id = result
+        return result
+    
+    # なければ新規生成してlocalStorageに保存
+    new_user_id = str(uuid.uuid4())
+    save_js = f"""
+    localStorage.setItem('cosmic_guidance_user_id', '{new_user_id}');
+    '{new_user_id}';
+    """
+    streamlit_js_eval(js_eval=save_js, key=f'save_user_id_{datetime.now().timestamp()}', want_output=False)
+    
+    st.session_state.user_id = new_user_id
+    return new_user_id
 
 # Supabase接続
 @st.cache_resource
@@ -189,13 +216,6 @@ def get_supabase_client() -> Client:
     """Supabaseクライアントを取得"""
     supabase_url = st.secrets.get("SUPABASE_URL", None)
     supabase_key = st.secrets.get("SUPABASE_KEY", None)
-    
-    # デバッグ情報を表示（一時的）
-    if supabase_url:
-        st.sidebar.write(f"✅ URL読み込み成功: {supabase_url[:30]}...")
-    if supabase_key:
-        st.sidebar.write(f"✅ KEY読み込み成功: {supabase_key[:30]}...")
-        st.sidebar.write(f"   KEY長さ: {len(supabase_key)} 文字")
     
     if not supabase_url or not supabase_key:
         st.error("⚠️ Supabase設定が不足しています。secrets.tomlに `SUPABASE_URL` と `SUPABASE_KEY` を設定してください。")
@@ -399,6 +419,9 @@ def get_system_prompt():
 def main():
     model = configure_gemini()
     
+    # user_idを取得または生成（localStorageから永続化）
+    get_or_create_user_id()
+    
     # 初回のみSupabaseから読み込み
     if not st.session_state.supabase_loaded:
         load_from_supabase()
@@ -460,6 +483,14 @@ def main():
     else:
         # サイドバーにプロフィール表示
         with st.sidebar:
+            # デバッグ情報
+            st.markdown("---")
+            st.caption("🔍 デバッグ情報")
+            st.caption(f"User ID: {st.session_state.user_id[:8]}...")
+            st.caption(f"セッション数: {len(st.session_state.sessions)}")
+            st.caption(f"メッセージ数: {len(st.session_state.messages)}")
+            st.markdown("---")
+            
             st.markdown("""
             <div class="profile-info">
                 <div class="profile-label">あなたのプロフィール</div>

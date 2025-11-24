@@ -5,6 +5,11 @@ secondaryBackgroundColor = "#1a0933"
 textColor = "#ffffff"
 font = "serif"
 
+[theme.sidebar]
+widgetBackgroundColor = "#1a0933"
+widgetBorderColor = "#d4af37"
+skeletonBackgroundColor = "#1a0933"
+
 [server]
 headless = true
 enableCORS = false

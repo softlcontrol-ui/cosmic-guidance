@@ -273,11 +273,12 @@ def save_to_local_storage():
             'last_session_id': st.session_state.current_session_id,
             'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
-        json_str = json.dumps(save_data, ensure_ascii=False)
         
         # JavaScriptを使ってローカルストレージに保存
+        # Pythonの辞書をJavaScriptオブジェクトとして展開し、JavaScript側でJSON.stringify()
         js_code = f"""
-        localStorage.setItem('cosmic_guidance_sessions', {json.dumps(json_str)});
+        const data = {json.dumps(save_data, ensure_ascii=False)};
+        localStorage.setItem('cosmic_guidance_sessions', JSON.stringify(data));
         """
         streamlit_js_eval(js_eval=js_code, key=f'save_sessions_{datetime.now().timestamp()}')
     except:

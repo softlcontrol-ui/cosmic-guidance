@@ -190,6 +190,13 @@ def get_supabase_client() -> Client:
     supabase_url = st.secrets.get("SUPABASE_URL", None)
     supabase_key = st.secrets.get("SUPABASE_KEY", None)
     
+    # デバッグ情報を表示（一時的）
+    if supabase_url:
+        st.sidebar.write(f"✅ URL読み込み成功: {supabase_url[:30]}...")
+    if supabase_key:
+        st.sidebar.write(f"✅ KEY読み込み成功: {supabase_key[:30]}...")
+        st.sidebar.write(f"   KEY長さ: {len(supabase_key)} 文字")
+    
     if not supabase_url or not supabase_key:
         st.error("⚠️ Supabase設定が不足しています。secrets.tomlに `SUPABASE_URL` と `SUPABASE_KEY` を設定してください。")
         st.stop()

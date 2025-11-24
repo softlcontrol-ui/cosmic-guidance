@@ -188,18 +188,25 @@ def load_from_local_storage():
         const data = localStorage.getItem('cosmic_guidance_sessions');
         return data;
         """
-        result = streamlit_js_eval(js_eval=js_code, key='load_sessions')
+        # 動的キーを使用して毎回新しいコンポーネントインスタンスを作成
+        result = streamlit_js_eval(js_eval=js_code, key=f'load_sessions_{datetime.now().timestamp()}')
         
-        if result and result != 'null':
-            sessions_data = json.loads(result)
-            st.session_state.sessions = sessions_data.get('sessions', {})
-            
-            # 最後に使ったセッションを復元
-            last_session_id = sessions_data.get('last_session_id')
-            if last_session_id and last_session_id in st.session_state.sessions:
-                load_session(last_session_id)
-            return True
-    except:
+        if result and result != 'null' and result != 'undefined':
+            try:
+                sessions_data = json.loads(result)
+                st.session_state.sessions = sessions_data.get('sessions', {})
+                
+                # 最後に使ったセッションを復元
+                last_session_id = sessions_data.get('last_session_id')
+                if last_session_id and last_session_id in st.session_state.sessions:
+                    load_session(last_session_id)
+                return True
+            except json.JSONDecodeError:
+                # JSONのパースに失敗した場合はローカルストレージをクリア
+                pass
+    except Exception as e:
+        # デバッグ用（本番では削除可能）
+        # st.warning(f"セッション読み込みエラー: {e}")
         pass
     return False
 
@@ -280,8 +287,10 @@ def save_to_local_storage():
         const data = {json.dumps(save_data, ensure_ascii=False)};
         localStorage.setItem('cosmic_guidance_sessions', JSON.stringify(data));
         """
-        streamlit_js_eval(js_eval=js_code, key=f'save_sessions_{datetime.now().timestamp()}')
-    except:
+        streamlit_js_eval(js_eval=js_code, key=f'save_sessions_{datetime.now().timestamp()}', want_output=False)
+    except Exception as e:
+        # デバッグ用（本番では削除可能）
+        # st.warning(f"セッション保存エラー: {e}")
         pass
 
 # Gemini API設定
@@ -481,7 +490,7 @@ def main():
             if st.button("➕ 新しいセッションを開始", use_container_width=True, type="primary"):
                 # ローカルストレージをクリア
                 js_code = "localStorage.removeItem('cosmic_guidance_sessions');"
-                streamlit_js_eval(js_eval=js_code, key=f'new_session_{datetime.now().timestamp()}')
+                streamlit_js_eval(js_eval=js_code, key=f'new_session_{datetime.now().timestamp()}', want_output=False)
                 
                 st.session_state.messages = []
                 st.session_state.birthdate = None
@@ -568,7 +577,7 @@ def main():
                 if st.button("⚠️ 本当に削除する", use_container_width=True, type="secondary"):
                     # ローカルストレージをクリア
                     js_code = "localStorage.removeItem('cosmic_guidance_sessions');"
-                    streamlit_js_eval(js_eval=js_code, key=f'clear_all_{datetime.now().timestamp()}')
+                    streamlit_js_eval(js_eval=js_code, key=f'clear_all_{datetime.now().timestamp()}', want_output=False)
                     
                     # セッション状態をクリア
                     st.session_state.messages = []

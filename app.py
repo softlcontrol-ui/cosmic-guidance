@@ -168,6 +168,21 @@ st.markdown("""
         border-radius: 15px;
         backdrop-filter: blur(10px);
     }
+    
+    /* タブ */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        color: #c0c0c0;
+        border-bottom: 2px solid transparent;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        color: #d4af37;
+        border-bottom-color: #d4af37;
+    }
 </style>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -227,7 +242,11 @@ def sign_up(email, password):
             return True
         return False
     except Exception as e:
-        st.error(f"⚠️ 登録エラー: {str(e)}")
+        error_msg = str(e)
+        if "User already registered" in error_msg:
+            st.error("⚠️ このメールアドレスは既に登録されています。")
+        else:
+            st.error(f"⚠️ 登録エラー: {error_msg}")
         return False
 
 # ログイン
@@ -246,7 +265,13 @@ def sign_in(email, password):
             return True
         return False
     except Exception as e:
-        st.error(f"⚠️ ログインエラー: {str(e)}")
+        error_msg = str(e)
+        if "Invalid login credentials" in error_msg:
+            st.error("⚠️ メールアドレスまたはパスワードが間違っています。")
+        elif "Email not confirmed" in error_msg:
+            st.error("⚠️ メールアドレスが確認されていません。確認メールをチェックしてください。")
+        else:
+            st.error(f"⚠️ ログインエラー: {error_msg}")
         return False
 
 # ログアウト
@@ -258,10 +283,14 @@ def sign_out():
         st.session_state.user = None
         st.session_state.messages = []
         st.session_state.sessions = {}
+        st.session_state.birthdate = None
+        st.session_state.age = None
+        st.session_state.zodiac = None
+        st.session_state.current_session_id = None
         st.session_state.supabase_loaded = False
         st.rerun()
     except Exception as e:
-        st.error(f"⚠️ ログアウトエラー: {str(e)}")
+        st.error(f"⚠️ ログアウトエラー: {e}")
 
 # Supabaseからデータを読み込む
 def load_from_supabase():
@@ -413,7 +442,7 @@ def configure_gemini():
     system_prompt = get_system_prompt() if st.session_state.birthdate else "あなたは運命の導き手です。"
     
     return genai.GenerativeModel(
-        'gemini-2.5-flash',
+        'gemini-2.0-flash-exp',
         system_instruction=system_prompt
     )
 
@@ -460,6 +489,7 @@ def get_system_prompt():
 - 優しく、しかし力強く語りかける
 - 説教臭くならず、相談者を信じ、背中を押すような言葉を選ぶ
 - 会話は自然に、相談者が求める深さに合わせて応答する
+- 過去の会話を記憶し、文脈を理解した上で応答する
 
 美しい日本語で、まるで古の賢者が語りかけるように応答してください。
 ただし、簡潔な質問には簡潔に、深い相談には深く応答してください。"""
@@ -741,5 +771,3 @@ if __name__ == "__main__":
         © 2024 運命の導き - Powered by Google Gemini AI & Supabase Auth
     </footer>
     """, unsafe_allow_html=True)
-
-Add login functionality with Supabase Auth

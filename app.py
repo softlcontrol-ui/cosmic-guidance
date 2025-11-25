@@ -741,3 +741,5 @@ if __name__ == "__main__":
         © 2024 運命の導き - Powered by Google Gemini AI & Supabase Auth
     </footer>
     """, unsafe_allow_html=True)
+
+Add login functionality with Supabase Auth

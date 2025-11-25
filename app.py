@@ -1,9 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 from datetime import datetime
-import json
+import bcrypt
 from supabase import create_client, Client
-import re
 
 # ページ設定
 st.set_page_config(
@@ -203,8 +202,10 @@ if 'current_session_id' not in st.session_state:
     st.session_state.current_session_id = None
 if 'sessions' not in st.session_state:
     st.session_state.sessions = {}
-if 'user' not in st.session_state:
-    st.session_state.user = None
+if 'username' not in st.session_state:
+    st.session_state.username = None
+if 'user_id' not in st.session_state:
+    st.session_state.user_id = None
 if 'supabase_loaded' not in st.session_state:
     st.session_state.supabase_loaded = False
 
@@ -221,89 +222,118 @@ def get_supabase_client() -> Client:
     
     return create_client(supabase_url, supabase_key)
 
-# メール検証
-def is_valid_email(email):
-    """メールアドレスの形式を検証"""
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
+# パスワードをハッシュ化
+def hash_password(password):
+    """パスワードをハッシュ化"""
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
-# サインアップ
-def sign_up(email, password):
+# パスワードを検証
+def verify_password(password, password_hash):
+    """パスワードが正しいか検証"""
+    try:
+        return bcrypt.checkpw(
+            password.encode('utf-8'), 
+            password_hash.encode('utf-8')
+        )
+    except:
+        return False
+
+# 新規登録
+def register_user(username, password):
     """新規ユーザー登録"""
     try:
         supabase = get_supabase_client()
-        response = supabase.auth.sign_up({
-            "email": email,
-            "password": password
-        })
         
-        if response.user:
-            st.success("✅ 登録完了！メールを確認して認証してください。")
+        # ユーザー名が既に存在するかチェック
+        existing = supabase.table('users').select('username').eq(
+            'username', username
+        ).execute()
+        
+        if existing.data:
+            st.error("⚠️ このユーザー名は既に使われています")
+            return False
+        
+        # パスワードをハッシュ化
+        password_hash = hash_password(password)
+        
+        # ユーザーを作成
+        user_data = {
+            'username': username,
+            'password_hash': password_hash
+        }
+        
+        result = supabase.table('users').insert(user_data).execute()
+        
+        if result.data:
+            st.success(f"✅ 登録完了！ユーザー名: {username}")
             return True
+        
         return False
+        
     except Exception as e:
-        error_msg = str(e)
-        if "User already registered" in error_msg:
-            st.error("⚠️ このメールアドレスは既に登録されています。")
-        else:
-            st.error(f"⚠️ 登録エラー: {error_msg}")
+        st.error(f"⚠️ 登録エラー: {e}")
         return False
 
 # ログイン
-def sign_in(email, password):
-    """ログイン"""
+def login_user(username, password):
+    """ユーザーログイン"""
     try:
         supabase = get_supabase_client()
-        response = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
         
-        if response.user:
-            st.session_state.user = response.user
-            st.session_state.supabase_loaded = False  # データを再読み込み
+        # ユーザーを検索
+        result = supabase.table('users').select('*').eq(
+            'username', username
+        ).execute()
+        
+        if not result.data:
+            st.error("⚠️ ユーザー名またはパスワードが間違っています")
+            return False
+        
+        user = result.data[0]
+        
+        # パスワードを検証
+        if verify_password(password, user['password_hash']):
+            # セッションに保存
+            st.session_state.user_id = user['id']
+            st.session_state.username = username
+            st.session_state.supabase_loaded = False
             return True
-        return False
-    except Exception as e:
-        error_msg = str(e)
-        if "Invalid login credentials" in error_msg:
-            st.error("⚠️ メールアドレスまたはパスワードが間違っています。")
-        elif "Email not confirmed" in error_msg:
-            st.error("⚠️ メールアドレスが確認されていません。確認メールをチェックしてください。")
         else:
-            st.error(f"⚠️ ログインエラー: {error_msg}")
+            st.error("⚠️ ユーザー名またはパスワードが間違っています")
+            return False
+            
+    except Exception as e:
+        st.error(f"⚠️ ログインエラー: {e}")
         return False
 
 # ログアウト
-def sign_out():
+def logout_user():
     """ログアウト"""
-    try:
-        supabase = get_supabase_client()
-        supabase.auth.sign_out()
-        st.session_state.user = None
-        st.session_state.messages = []
-        st.session_state.sessions = {}
-        st.session_state.birthdate = None
-        st.session_state.age = None
-        st.session_state.zodiac = None
-        st.session_state.current_session_id = None
-        st.session_state.supabase_loaded = False
-        st.rerun()
-    except Exception as e:
-        st.error(f"⚠️ ログアウトエラー: {e}")
+    st.session_state.user_id = None
+    st.session_state.username = None
+    st.session_state.messages = []
+    st.session_state.sessions = {}
+    st.session_state.birthdate = None
+    st.session_state.age = None
+    st.session_state.zodiac = None
+    st.session_state.current_session_id = None
+    st.session_state.supabase_loaded = False
+    st.rerun()
 
 # Supabaseからデータを読み込む
 def load_from_supabase():
     """Supabaseからセッションデータを読み込む"""
-    if not st.session_state.user:
+    if not st.session_state.username:
         return False
     
     try:
         supabase = get_supabase_client()
         
-        # 認証されたユーザーのセッションを取得（最新5件）
+        # ユーザーのセッションを取得（最新5件）
         response = supabase.table('sessions').select('*').eq(
-            'user_id', st.session_state.user.id
+            'username', st.session_state.username
         ).order('updated_at', desc=True).limit(5).execute()
         
         if response.data:
@@ -386,7 +416,7 @@ def load_session(session_id):
 # Supabaseにデータを保存する
 def save_to_supabase():
     """Supabaseにデータを保存する"""
-    if not st.session_state.user or not st.session_state.current_session_id:
+    if not st.session_state.username or not st.session_state.current_session_id:
         return
     
     try:
@@ -398,7 +428,7 @@ def save_to_supabase():
         
         # データを準備
         data = {
-            'user_id': st.session_state.user.id,
+            'username': st.session_state.username,
             'session_id': st.session_state.current_session_id,
             'birthdate': session['birthdate'],
             'age': session['age'],
@@ -409,13 +439,13 @@ def save_to_supabase():
         
         # 既存のレコードをチェック
         existing = supabase.table('sessions').select('id').eq(
-            'user_id', st.session_state.user.id
+            'username', st.session_state.username
         ).eq('session_id', st.session_state.current_session_id).execute()
         
         if existing.data:
             # 更新
             supabase.table('sessions').update(data).eq(
-                'user_id', st.session_state.user.id
+                'username', st.session_state.username
             ).eq('session_id', st.session_state.current_session_id).execute()
         else:
             # 新規作成
@@ -512,44 +542,40 @@ def login_page():
     
     with tab1:
         st.subheader("ログイン")
-        email = st.text_input("メールアドレス", key="login_email")
+        username = st.text_input("ユーザー名", key="login_username")
         password = st.text_input("パスワード", type="password", key="login_password")
         
         if st.button("ログイン", use_container_width=True):
-            if not email or not password:
-                st.error("メールアドレスとパスワードを入力してください")
-            elif not is_valid_email(email):
-                st.error("正しいメールアドレスを入力してください")
+            if not username or not password:
+                st.error("ユーザー名とパスワードを入力してください")
             else:
-                if sign_in(email, password):
+                if login_user(username, password):
                     st.success("✅ ログイン成功！")
                     st.rerun()
     
     with tab2:
         st.subheader("新規登録")
-        new_email = st.text_input("メールアドレス", key="signup_email")
+        new_username = st.text_input("好きなユーザー名", key="signup_username", help="半角英数字、日本語OK")
         new_password = st.text_input("パスワード（8文字以上）", type="password", key="signup_password")
         new_password_confirm = st.text_input("パスワード（確認）", type="password", key="signup_password_confirm")
         
         if st.button("登録", use_container_width=True):
-            if not new_email or not new_password:
+            if not new_username or not new_password:
                 st.error("すべての項目を入力してください")
-            elif not is_valid_email(new_email):
-                st.error("正しいメールアドレスを入力してください")
             elif len(new_password) < 8:
                 st.error("パスワードは8文字以上にしてください")
             elif new_password != new_password_confirm:
                 st.error("パスワードが一致しません")
             else:
-                if sign_up(new_email, new_password):
-                    st.info("📧 確認メールを送信しました。メールボックスを確認してください。")
+                if register_user(new_username, new_password):
+                    st.info("🎉 登録完了！ログインタブからログインしてください。")
     
     st.markdown("</div>", unsafe_allow_html=True)
 
 # メインアプリ
 def main():
     # ログインチェック
-    if not st.session_state.user:
+    if not st.session_state.username:
         login_page()
         return
     
@@ -594,7 +620,7 @@ def main():
             create_new_session()
             
             # 初回メッセージ
-            welcome_message = f"""✨ ようこそ。
+            welcome_message = f"""✨ ようこそ、{st.session_state.username}さん。
 
 あなたは{st.session_state.age}歳、{st.session_state.zodiac}の方ですね。
 
@@ -619,7 +645,7 @@ def main():
             st.markdown(f"""
             <div class="profile-info">
                 <div class="profile-label">ようこそ</div>
-                <div class="profile-value">✉️ {st.session_state.user.email}</div>
+                <div class="profile-value">👤 {st.session_state.username}</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -633,7 +659,7 @@ def main():
             """, unsafe_allow_html=True)
             
             if st.button("🚪 ログアウト", use_container_width=True):
-                sign_out()
+                logout_user()
             
             st.markdown("---")
             
@@ -680,7 +706,7 @@ def main():
                                 # Supabaseから削除
                                 supabase = get_supabase_client()
                                 supabase.table('sessions').delete().eq(
-                                    'user_id', st.session_state.user.id
+                                    'username', st.session_state.username
                                 ).eq('session_id', session_id).execute()
                                 
                                 # ローカルからも削除
@@ -768,6 +794,6 @@ if __name__ == "__main__":
     # フッター
     st.markdown("""
     <footer style='text-align: center; padding: 2rem 0; color: #c0c0c0; font-size: 0.8rem; opacity: 0.7;'>
-        © 2024 運命の導き - Powered by Google Gemini AI & Supabase Auth
+        © 2024 運命の導き - Powered by Google Gemini AI
     </footer>
     """, unsafe_allow_html=True)

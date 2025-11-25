@@ -2,8 +2,8 @@ import streamlit as st
 import google.generativeai as genai
 from datetime import datetime
 import json
-import uuid
 from supabase import create_client, Client
+import re
 
 # ページ設定
 st.set_page_config(
@@ -157,6 +157,17 @@ st.markdown("""
         font-size: 1.1rem;
         font-weight: 500;
     }
+    
+    /* ログインフォーム */
+    .login-container {
+        max-width: 400px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: rgba(29, 15, 51, 0.6);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+    }
 </style>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -177,38 +188,10 @@ if 'current_session_id' not in st.session_state:
     st.session_state.current_session_id = None
 if 'sessions' not in st.session_state:
     st.session_state.sessions = {}
-if 'user_id' not in st.session_state:
-    st.session_state.user_id = None
+if 'user' not in st.session_state:
+    st.session_state.user = None
 if 'supabase_loaded' not in st.session_state:
     st.session_state.supabase_loaded = False
-
-# user_idをlocalStorageから取得、なければ生成
-def get_or_create_user_id():
-    """localStorageからuser_idを取得、なければ新規生成"""
-    if st.session_state.user_id:
-        return st.session_state.user_id
-    
-    # localStorageから取得を試みる
-    js_code = """
-    const userId = localStorage.getItem('cosmic_guidance_user_id');
-    userId;
-    """
-    result = streamlit_js_eval(js_eval=js_code, key=f'get_user_id_{datetime.now().timestamp()}')
-    
-    if result and result != 'null' and result != 'undefined':
-        st.session_state.user_id = result
-        return result
-    
-    # なければ新規生成してlocalStorageに保存
-    new_user_id = str(uuid.uuid4())
-    save_js = f"""
-    localStorage.setItem('cosmic_guidance_user_id', '{new_user_id}');
-    '{new_user_id}';
-    """
-    streamlit_js_eval(js_eval=save_js, key=f'save_user_id_{datetime.now().timestamp()}', want_output=False)
-    
-    st.session_state.user_id = new_user_id
-    return new_user_id
 
 # Supabase接続
 @st.cache_resource
@@ -218,20 +201,80 @@ def get_supabase_client() -> Client:
     supabase_key = st.secrets.get("SUPABASE_KEY", None)
     
     if not supabase_url or not supabase_key:
-        st.error("⚠️ Supabase設定が不足しています。secrets.tomlに `SUPABASE_URL` と `SUPABASE_KEY` を設定してください。")
+        st.error("⚠️ Supabase設定が不足しています。")
         st.stop()
     
     return create_client(supabase_url, supabase_key)
 
+# メール検証
+def is_valid_email(email):
+    """メールアドレスの形式を検証"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+# サインアップ
+def sign_up(email, password):
+    """新規ユーザー登録"""
+    try:
+        supabase = get_supabase_client()
+        response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+        
+        if response.user:
+            st.success("✅ 登録完了！メールを確認して認証してください。")
+            return True
+        return False
+    except Exception as e:
+        st.error(f"⚠️ 登録エラー: {str(e)}")
+        return False
+
+# ログイン
+def sign_in(email, password):
+    """ログイン"""
+    try:
+        supabase = get_supabase_client()
+        response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+        
+        if response.user:
+            st.session_state.user = response.user
+            st.session_state.supabase_loaded = False  # データを再読み込み
+            return True
+        return False
+    except Exception as e:
+        st.error(f"⚠️ ログインエラー: {str(e)}")
+        return False
+
+# ログアウト
+def sign_out():
+    """ログアウト"""
+    try:
+        supabase = get_supabase_client()
+        supabase.auth.sign_out()
+        st.session_state.user = None
+        st.session_state.messages = []
+        st.session_state.sessions = {}
+        st.session_state.supabase_loaded = False
+        st.rerun()
+    except Exception as e:
+        st.error(f"⚠️ ログアウトエラー: {str(e)}")
+
 # Supabaseからデータを読み込む
 def load_from_supabase():
     """Supabaseからセッションデータを読み込む"""
+    if not st.session_state.user:
+        return False
+    
     try:
         supabase = get_supabase_client()
         
-        # ユーザーのセッションを取得（最新5件）
+        # 認証されたユーザーのセッションを取得（最新5件）
         response = supabase.table('sessions').select('*').eq(
-            'user_id', st.session_state.user_id
+            'user_id', st.session_state.user.id
         ).order('updated_at', desc=True).limit(5).execute()
         
         if response.data:
@@ -314,10 +357,10 @@ def load_session(session_id):
 # Supabaseにデータを保存する
 def save_to_supabase():
     """Supabaseにデータを保存する"""
+    if not st.session_state.user or not st.session_state.current_session_id:
+        return
+    
     try:
-        if not st.session_state.current_session_id:
-            return
-        
         # 現在のセッションを保存
         save_current_session()
         
@@ -326,7 +369,7 @@ def save_to_supabase():
         
         # データを準備
         data = {
-            'user_id': st.session_state.user_id,
+            'user_id': st.session_state.user.id,
             'session_id': st.session_state.current_session_id,
             'birthdate': session['birthdate'],
             'age': session['age'],
@@ -337,13 +380,13 @@ def save_to_supabase():
         
         # 既存のレコードをチェック
         existing = supabase.table('sessions').select('id').eq(
-            'user_id', st.session_state.user_id
+            'user_id', st.session_state.user.id
         ).eq('session_id', st.session_state.current_session_id).execute()
         
         if existing.data:
             # 更新
             supabase.table('sessions').update(data).eq(
-                'user_id', st.session_state.user_id
+                'user_id', st.session_state.user.id
             ).eq('session_id', st.session_state.current_session_id).execute()
         else:
             # 新規作成
@@ -361,11 +404,18 @@ def configure_gemini():
     api_key = st.secrets.get("GEMINI_API_KEY", None)
     
     if not api_key:
-        st.error("⚠️ APIキーが設定されていません。Streamlit Secretsに `GEMINI_API_KEY` を設定してください。")
+        st.error("⚠️ APIキーが設定されていません。")
         st.stop()
     
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel('gemini-2.5-flash')
+    
+    # システムプロンプトを使用してモデルを初期化
+    system_prompt = get_system_prompt() if st.session_state.birthdate else "あなたは運命の導き手です。"
+    
+    return genai.GenerativeModel(
+        'gemini-2.5-flash',
+        system_instruction=system_prompt
+    )
 
 # 星座を計算
 def get_zodiac_sign(month, day):
@@ -415,12 +465,65 @@ def get_system_prompt():
 ただし、簡潔な質問には簡潔に、深い相談には深く応答してください。"""
     return "あなたは運命の導き手です。"
 
+# ログインページ
+def login_page():
+    """ログイン/サインアップページ"""
+    st.markdown("""
+    <div class="main-header">
+        <div class="logo">✨</div>
+        <h1 class="main-title">運命の導き</h1>
+        <p class="subtitle">COSMIC GUIDANCE</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<div class='login-container'>", unsafe_allow_html=True)
+    
+    tab1, tab2 = st.tabs(["ログイン", "新規登録"])
+    
+    with tab1:
+        st.subheader("ログイン")
+        email = st.text_input("メールアドレス", key="login_email")
+        password = st.text_input("パスワード", type="password", key="login_password")
+        
+        if st.button("ログイン", use_container_width=True):
+            if not email or not password:
+                st.error("メールアドレスとパスワードを入力してください")
+            elif not is_valid_email(email):
+                st.error("正しいメールアドレスを入力してください")
+            else:
+                if sign_in(email, password):
+                    st.success("✅ ログイン成功！")
+                    st.rerun()
+    
+    with tab2:
+        st.subheader("新規登録")
+        new_email = st.text_input("メールアドレス", key="signup_email")
+        new_password = st.text_input("パスワード（8文字以上）", type="password", key="signup_password")
+        new_password_confirm = st.text_input("パスワード（確認）", type="password", key="signup_password_confirm")
+        
+        if st.button("登録", use_container_width=True):
+            if not new_email or not new_password:
+                st.error("すべての項目を入力してください")
+            elif not is_valid_email(new_email):
+                st.error("正しいメールアドレスを入力してください")
+            elif len(new_password) < 8:
+                st.error("パスワードは8文字以上にしてください")
+            elif new_password != new_password_confirm:
+                st.error("パスワードが一致しません")
+            else:
+                if sign_up(new_email, new_password):
+                    st.info("📧 確認メールを送信しました。メールボックスを確認してください。")
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+
 # メインアプリ
 def main():
-    model = configure_gemini()
+    # ログインチェック
+    if not st.session_state.user:
+        login_page()
+        return
     
-    # user_idを取得または生成（localStorageから永続化）
-    get_or_create_user_id()
+    model = configure_gemini()
     
     # 初回のみSupabaseから読み込み
     if not st.session_state.supabase_loaded:
@@ -483,33 +586,31 @@ def main():
     else:
         # サイドバーにプロフィール表示
         with st.sidebar:
-            # デバッグ情報
-            st.markdown("---")
-            st.caption("🔍 デバッグ情報")
-            st.caption(f"User ID: {st.session_state.user_id[:8]}...")
-            st.caption(f"セッション数: {len(st.session_state.sessions)}")
-            st.caption(f"メッセージ数: {len(st.session_state.messages)}")
-            st.markdown("---")
+            st.markdown(f"""
+            <div class="profile-info">
+                <div class="profile-label">ようこそ</div>
+                <div class="profile-value">✉️ {st.session_state.user.email}</div>
+            </div>
+            """, unsafe_allow_html=True)
             
-            st.markdown("""
+            st.markdown(f"""
             <div class="profile-info">
                 <div class="profile-label">あなたのプロフィール</div>
-                <div class="profile-value">🎂 {birthdate}</div>
-                <div class="profile-value">✨ {age}歳</div>
-                <div class="profile-value">♈ {zodiac}</div>
+                <div class="profile-value">🎂 {st.session_state.birthdate}</div>
+                <div class="profile-value">✨ {st.session_state.age}歳</div>
+                <div class="profile-value">♈ {st.session_state.zodiac}</div>
             </div>
-            """.format(
-                birthdate=st.session_state.birthdate,
-                age=st.session_state.age,
-                zodiac=st.session_state.zodiac
-            ), unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+            
+            if st.button("🚪 ログアウト", use_container_width=True):
+                sign_out()
             
             st.markdown("---")
             
             # 保存されたセッション一覧
             if len(st.session_state.sessions) > 0:
                 st.subheader("💾 保存されたセッション")
-                st.caption(f"{len(st.session_state.sessions)}件のセッション（Supabase同期）")
+                st.caption(f"{len(st.session_state.sessions)}件のセッション")
                 
                 # セッションを新しい順にソート
                 sorted_sessions = sorted(
@@ -523,7 +624,7 @@ def main():
                     is_current = session_id == st.session_state.current_session_id
                     
                     # セッション情報
-                    created = session['created_at'][:19]  # ISO形式から日時部分を抽出
+                    created = session['created_at'][:19]
                     msg_count = session.get('message_count', len(session.get('messages', [])))
                     first_q = session.get('first_question', '新しいセッション')
                     
@@ -549,7 +650,7 @@ def main():
                                 # Supabaseから削除
                                 supabase = get_supabase_client()
                                 supabase.table('sessions').delete().eq(
-                                    'user_id', st.session_state.user_id
+                                    'user_id', st.session_state.user.id
                                 ).eq('session_id', session_id).execute()
                                 
                                 # ローカルからも削除
@@ -592,6 +693,9 @@ def main():
             with st.chat_message("assistant"):
                 with st.spinner("🌌 宇宙と対話中..."):
                     try:
+                        # モデルを再初期化（最新のsystem_instructionを使用）
+                        model = configure_gemini()
+                        
                         # 会話履歴を構築
                         conversation_history = []
                         for msg in st.session_state.messages[:-1]:
@@ -601,16 +705,12 @@ def main():
                                 "parts": [{"text": msg["content"]}]
                             })
                         
-                        # システムプロンプトを含めてリクエスト
-                        system_prompt = get_system_prompt()
-                        full_prompt = f"{system_prompt}\n\n【相談者の質問】\n{prompt}"
-                        
                         # 会話履歴がある場合は、それを含める
                         if conversation_history:
                             chat = model.start_chat(history=conversation_history)
-                            response = chat.send_message(full_prompt)
+                            response = chat.send_message(prompt)
                         else:
-                            response = model.generate_content(full_prompt)
+                            response = model.generate_content(prompt)
                         
                         assistant_message = response.text
                         st.markdown(assistant_message)
@@ -638,6 +738,6 @@ if __name__ == "__main__":
     # フッター
     st.markdown("""
     <footer style='text-align: center; padding: 2rem 0; color: #c0c0c0; font-size: 0.8rem; opacity: 0.7;'>
-        © 2024 運命の導き - Powered by Google Gemini AI & Supabase
+        © 2024 運命の導き - Powered by Google Gemini AI & Supabase Auth
     </footer>
     """, unsafe_allow_html=True)

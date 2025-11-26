@@ -2152,7 +2152,21 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+    # ===== 自動スクロール（ChatGPTと同じ動き） =====
+scroll_js = """
+<script>
+const chatContainer = document.getElementById('chat-container');
+const chatEnd = document.getElementById('chat-end');
+
+// 常に最下部へスクロール
+setTimeout(function() {
+    chatEnd.scrollIntoView({ behavior: 'smooth' });
+}, 100);
+</script>
+"""
+
+st.markdown(scroll_js, unsafe_allow_html=True)
+
     # フッター
     st.markdown("""
     <footer style='text-align: center; padding: 2rem 0; color: #c0c0c0; font-size: 0.8rem; opacity: 0.7;'>

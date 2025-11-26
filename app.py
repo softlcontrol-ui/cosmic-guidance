@@ -1166,7 +1166,7 @@ def configure_gemini():
     system_prompt = get_system_prompt() if st.session_state.birthdate else "あなたは運命の導き手です。"
     
     return genai.GenerativeModel(
-        'gemini-2.0-flash-exp',
+        'gemini-2.5-flash-exp',
         system_instruction=system_prompt
     )
 

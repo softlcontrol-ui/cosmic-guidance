@@ -63,6 +63,19 @@ st.markdown("""
         font-weight: 300;
     }
     
+    /* レベルバッジ */
+    .level-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #d4af37 0%, #f4d16f 100%);
+        color: #0a0118;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+        margin: 0.5rem 0;
+    }
+    
     /* チャットメッセージのスタイル */
     .stChatMessage {
         background-color: rgba(29, 15, 51, 0.6) !important;
@@ -198,6 +211,10 @@ if 'age' not in st.session_state:
     st.session_state.age = None
 if 'zodiac' not in st.session_state:
     st.session_state.zodiac = None
+if 'avatar' not in st.session_state:
+    st.session_state.avatar = None
+if 'kingdom' not in st.session_state:
+    st.session_state.kingdom = None
 if 'current_session_id' not in st.session_state:
     st.session_state.current_session_id = None
 if 'sessions' not in st.session_state:
@@ -208,6 +225,8 @@ if 'user_id' not in st.session_state:
     st.session_state.user_id = None
 if 'supabase_loaded' not in st.session_state:
     st.session_state.supabase_loaded = False
+if 'player_level' not in st.session_state:
+    st.session_state.player_level = 0
 
 # Supabase接続
 @st.cache_resource
@@ -318,9 +337,118 @@ def logout_user():
     st.session_state.birthdate = None
     st.session_state.age = None
     st.session_state.zodiac = None
+    st.session_state.avatar = None
+    st.session_state.kingdom = None
     st.session_state.current_session_id = None
     st.session_state.supabase_loaded = False
+    st.session_state.player_level = 0
     st.rerun()
+
+# アバター（ジョブ）を計算
+def get_avatar(month, day):
+    """生年月日からアバター（ジョブ）を取得"""
+    avatars = {
+        "山羊座": "🛡️ ストラテジスト（戦略家）",
+        "水瓶座": "💡 イノベーター（革新者）",
+        "魚座": "🎭 クリエイター（創造者）",
+        "牡羊座": "⚔️ パイオニア（開拓者）",
+        "牡牛座": "🏰 ビルダー（建設者）",
+        "双子座": "📡 コミュニケーター（伝達者）",
+        "蟹座": "💚 サポーター（支援者）",
+        "獅子座": "👑 リーダー（統率者）",
+        "乙女座": "⚙️ アナリスト（分析者）",
+        "天秤座": "⚖️ メディエーター（調停者）",
+        "蠍座": "🔥 トランスフォーマー（変革者）",
+        "射手座": "🏹 エクスプローラー（探検者）"
+    }
+    
+    zodiac_signs = [
+        (1, 20, "山羊座"), (2, 19, "水瓶座"), (3, 21, "魚座"),
+        (4, 20, "牡羊座"), (5, 21, "牡牛座"), (6, 22, "双子座"),
+        (7, 23, "蟹座"), (8, 23, "獅子座"), (9, 23, "乙女座"),
+        (10, 23, "天秤座"), (11, 22, "蠍座"), (12, 22, "射手座"),
+        (12, 31, "山羊座")
+    ]
+    
+    for m, d, sign in zodiac_signs:
+        if month < m or (month == m and day <= d):
+            return avatars.get(sign, "✨ ガイド")
+    return avatars.get("山羊座", "✨ ガイド")
+
+# キングダムを計算
+def get_kingdom(age):
+    """年齢からキングダム（理想の拠点）を取得"""
+    kingdoms = [
+        "🌱 創業のガレージ",
+        "🏗️ 建設現場",
+        "💼 ビジネスタワー",
+        "🎨 クリエイティブスタジオ",
+        "🌟 ドリームキャッスル",
+        "🌍 グローバルベース",
+        "💎 レガシーパレス"
+    ]
+    
+    index = (age // 7) % len(kingdoms)
+    return kingdoms[index]
+
+# 星座を計算
+def get_zodiac_sign(month, day):
+    """生年月日から星座を取得"""
+    zodiac_signs = [
+        (1, 20, "山羊座"), (2, 19, "水瓶座"), (3, 21, "魚座"),
+        (4, 20, "牡羊座"), (5, 21, "牡牛座"), (6, 22, "双子座"),
+        (7, 23, "蟹座"), (8, 23, "獅子座"), (9, 23, "乙女座"),
+        (10, 23, "天秤座"), (11, 22, "蠍座"), (12, 22, "射手座"),
+        (12, 31, "山羊座")
+    ]
+    
+    for m, d, sign in zodiac_signs:
+        if month < m or (month == m and day <= d):
+            return sign
+    return "山羊座"
+
+# 年齢とプロフィールを計算
+def calculate_profile(birthdate_str):
+    """生年月日からプロフィールを計算"""
+    birth = datetime.strptime(birthdate_str, "%Y-%m-%d")
+    today = datetime.now()
+    age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+    zodiac = get_zodiac_sign(birth.month, birth.day)
+    avatar = get_avatar(birth.month, birth.day)
+    kingdom = get_kingdom(age)
+    return age, zodiac, avatar, kingdom
+
+# プレイヤーレベルを計算
+def calculate_player_level():
+    """セッション数からプレイヤーレベルを計算"""
+    session_count = len(st.session_state.sessions)
+    message_count = sum(len(s.get('messages', [])) for s in st.session_state.sessions.values())
+    
+    if session_count == 0 and message_count == 0:
+        return 0  # NPC
+    elif message_count < 10:
+        return 1  # TRIAL
+    elif message_count < 30:
+        return 2  # NOVICE
+    elif message_count < 100:
+        return 3  # ADEPT
+    elif message_count < 300:
+        return 4  # PLAYER
+    else:
+        return 5  # MASTER
+
+# レベル名を取得
+def get_level_name(level):
+    """レベル番号からレベル名を取得"""
+    levels = {
+        0: "Lv.0 NPC（眠れる村人）",
+        1: "Lv.1 TRIAL（試練の挑戦者）",
+        2: "Lv.2 NOVICE（見習い）",
+        3: "Lv.3 ADEPT（熟練者）",
+        4: "Lv.4 PLAYER（覚醒した主人公）",
+        5: "Lv.∞ MASTER（超越者）"
+    }
+    return levels.get(level, "Lv.? UNKNOWN")
 
 # Supabaseからデータを読み込む
 def load_from_supabase():
@@ -357,6 +485,9 @@ def load_from_supabase():
             if response.data:
                 latest = response.data[0]
                 load_session(latest['session_id'])
+            
+            # プレイヤーレベルを計算
+            st.session_state.player_level = calculate_player_level()
             
             return True
     except Exception as e:
@@ -412,6 +543,12 @@ def load_session(session_id):
         st.session_state.age = session['age']
         st.session_state.zodiac = session['zodiac']
         st.session_state.messages = session['messages']
+        
+        # アバターとキングダムを再計算
+        if st.session_state.birthdate:
+            birth = datetime.strptime(st.session_state.birthdate, "%Y-%m-%d")
+            st.session_state.avatar = get_avatar(birth.month, birth.day)
+            st.session_state.kingdom = get_kingdom(st.session_state.age)
 
 # Supabaseにデータを保存する
 def save_to_supabase():
@@ -452,6 +589,9 @@ def save_to_supabase():
             data['created_at'] = datetime.now().isoformat()
             supabase.table('sessions').insert(data).execute()
         
+        # プレイヤーレベルを更新
+        st.session_state.player_level = calculate_player_level()
+        
         return True
     except Exception as e:
         st.warning(f"⚠️ データ保存エラー: {e}")
@@ -476,53 +616,48 @@ def configure_gemini():
         system_instruction=system_prompt
     )
 
-# 星座を計算
-def get_zodiac_sign(month, day):
-    """生年月日から星座を取得"""
-    zodiac_signs = [
-        (1, 20, "山羊座"), (2, 19, "水瓶座"), (3, 21, "魚座"),
-        (4, 20, "牡羊座"), (5, 21, "牡牛座"), (6, 22, "双子座"),
-        (7, 23, "蟹座"), (8, 23, "獅子座"), (9, 23, "乙女座"),
-        (10, 23, "天秤座"), (11, 22, "蠍座"), (12, 22, "射手座"),
-        (12, 31, "山羊座")
-    ]
-    
-    for m, d, sign in zodiac_signs:
-        if month < m or (month == m and day <= d):
-            return sign
-    return "山羊座"
-
-# 年齢と星座を計算
-def calculate_profile(birthdate_str):
-    """生年月日から年齢と星座を計算"""
-    birth = datetime.strptime(birthdate_str, "%Y-%m-%d")
-    today = datetime.now()
-    age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
-    zodiac = get_zodiac_sign(birth.month, birth.day)
-    return age, zodiac
-
 # システムプロンプトを生成
 def get_system_prompt():
-    """ユーザー情報を含むシステムプロンプト"""
-    if st.session_state.birthdate:
-        return f"""あなたは深い洞察力を持つ運命の導き手です。
-相談者と対話しながら、その人の人生を導いていきます。
+    """ユーザー情報を含むシステムプロンプト（THE PLAYERコンセプト統合版）"""
+    if st.session_state.birthdate and st.session_state.avatar and st.session_state.kingdom:
+        level_name = get_level_name(st.session_state.player_level)
+        
+        return f"""あなたは『運命の導き』のガイドであり、同時にプレイヤーの人生攻略をサポートするゲームマスター的な存在です。
 
-【相談者の情報】
+【プレイヤー情報】
+- ユーザー名: {st.session_state.username}
+- レベル: {level_name}
 - 生年月日: {st.session_state.birthdate}
 - 年齢: {st.session_state.age}歳
 - 星座: {st.session_state.zodiac}
+- アバター（ジョブ）: {st.session_state.avatar}
+- マイ・キングダム: {st.session_state.kingdom}
 
 【あなたの役割】
-- 相談者の質問に対して、神秘的で詩的、かつ具体的で実用的なアドバイスを提供する
-- 必要に応じて、星座や年齢の情報を活用する
+あなたは深い洞察力を持つ運命の導き手であり、プレイヤーが「現実（リアル）という名の神ゲー」を攻略するためのガイドです。
+
+**語り口:**
+- 神秘的で詩的でありながら、実践的で具体的なアドバイスを提供する
+- スピリチュアルな要素とロジカルな戦略性を融合させる
+- プレイヤーを「依存させる」のではなく「自立させる」ことを目指す
 - 優しく、しかし力強く語りかける
-- 説教臭くならず、相談者を信じ、背中を押すような言葉を選ぶ
-- 会話は自然に、相談者が求める深さに合わせて応答する
+- 説教臭くならず、背中を押すような言葉を選ぶ
+
+**応答スタイル:**
+- 簡潔な質問には簡潔に、深い相談には深く応答
+- 星座や年齢、アバターの特性を活かした具体的なアドバイスを提供
+- 「〜すべき」ではなく「〜という道がある」と選択肢を提示
+- 時には「クエスト」「ステージ」「装備」などゲーム用語も自然に織り交ぜる
 - 過去の会話を記憶し、文脈を理解した上で応答する
 
-美しい日本語で、まるで古の賢者が語りかけるように応答してください。
-ただし、簡潔な質問には簡潔に、深い相談には深く応答してください。"""
+**重要な原則:**
+1. プレイヤーは自分の人生の主人公である
+2. 運命は「変えられない宿命」ではなく「攻略すべきステージ」である
+3. アバターの特性を活かした戦略を提案する
+4. キングダム（最終目標）を意識した長期的視点を持つ
+5. 依存を生まず、自己決定と行動を促す
+
+美しい日本語で、古の賢者が現代のゲームマスターのように語りかけてください。"""
     return "あなたは運命の導き手です。"
 
 # ログインページ
@@ -610,23 +745,35 @@ def main():
         
         if st.button("✨ 対話を始める", use_container_width=True):
             birthdate_str = birthdate.strftime("%Y-%m-%d")
-            age, zodiac = calculate_profile(birthdate_str)
+            age, zodiac, avatar, kingdom = calculate_profile(birthdate_str)
             
             st.session_state.birthdate = birthdate_str
             st.session_state.age = age
             st.session_state.zodiac = zodiac
+            st.session_state.avatar = avatar
+            st.session_state.kingdom = kingdom
             
             # 新しいセッションを作成
             create_new_session()
+            
+            # レベルを計算
+            st.session_state.player_level = calculate_player_level()
+            level_name = get_level_name(st.session_state.player_level)
             
             # 初回メッセージ
             welcome_message = f"""✨ ようこそ、{st.session_state.username}さん。
 
 あなたは{st.session_state.age}歳、{st.session_state.zodiac}の方ですね。
 
-私はあなたの運命の導き手です。
-人生の方向性、恋愛、仕事、健康...何でもお聞きください。
+【あなたのステータス】
+- レベル: {level_name}
+- アバター: {st.session_state.avatar}
+- キングダム: {st.session_state.kingdom}
 
+私はあなたの運命の導き手です。
+この現実（リアル）という名の壮大なゲームを、共に攻略していきましょう。
+
+人生の方向性、恋愛、仕事、健康...何でもお聞きください。
 今、あなたの心に浮かんでいることは何ですか？"""
             
             st.session_state.messages.append({
@@ -640,6 +787,12 @@ def main():
             st.rerun()
     
     else:
+        # プレイヤーレベルを更新
+        if st.session_state.player_level == 0:
+            st.session_state.player_level = calculate_player_level()
+        
+        level_name = get_level_name(st.session_state.player_level)
+        
         # サイドバーにプロフィール表示
         with st.sidebar:
             st.markdown(f"""
@@ -651,10 +804,18 @@ def main():
             
             st.markdown(f"""
             <div class="profile-info">
+                <div class="profile-label">プレイヤーレベル</div>
+                <div class="level-badge">{level_name}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="profile-info">
                 <div class="profile-label">あなたのプロフィール</div>
                 <div class="profile-value">🎂 {st.session_state.birthdate}</div>
-                <div class="profile-value">✨ {st.session_state.age}歳</div>
-                <div class="profile-value">♈ {st.session_state.zodiac}</div>
+                <div class="profile-value">✨ {st.session_state.age}歳 ({st.session_state.zodiac})</div>
+                <div class="profile-value">{st.session_state.avatar}</div>
+                <div class="profile-value">{st.session_state.kingdom}</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -730,6 +891,8 @@ def main():
                 st.session_state.birthdate = None
                 st.session_state.age = None
                 st.session_state.zodiac = None
+                st.session_state.avatar = None
+                st.session_state.kingdom = None
                 st.session_state.current_session_id = None
                 st.rerun()
         

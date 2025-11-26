@@ -743,15 +743,30 @@ def main():
                 max_value=datetime.now()
             )
         
-        if st.button("✨ 対話を始める", use_container_width=True):
+        if st.button("✨ 運命の羅針盤を開く", use_container_width=True):
             birthdate_str = birthdate.strftime("%Y-%m-%d")
-            age, zodiac, avatar, kingdom = calculate_profile(birthdate_str)
+            profile = calculate_profile(birthdate_str)
             
+            # セッション状態に保存
             st.session_state.birthdate = birthdate_str
-            st.session_state.age = age
-            st.session_state.zodiac = zodiac
-            st.session_state.avatar = avatar
-            st.session_state.kingdom = kingdom
+            st.session_state.age = profile['age']
+            st.session_state.zodiac = profile['zodiac']
+            st.session_state.essence_human = profile['essence_human']
+            st.session_state.essence_earth = profile['essence_earth']
+            st.session_state.avatar = profile['avatar']
+            st.session_state.kingdom = profile['kingdom']
+            st.session_state.destiny_human = profile['destiny_human']
+            st.session_state.destiny_earth = profile['destiny_earth']
+            st.session_state.destiny_heaven = profile['destiny_heaven']
+            st.session_state.mission = profile['mission']
+            st.session_state.field = profile['field']
+            st.session_state.reward = profile['reward']
+            st.session_state.month_heaven = profile['month_heaven']
+            st.session_state.month_earth = profile['month_earth']
+            st.session_state.month_human = profile['month_human']
+            st.session_state.month_stage = profile['month_stage']
+            st.session_state.month_zone = profile['month_zone']
+            st.session_state.month_skill = profile['month_skill']
             
             # 新しいセッションを作成
             create_new_session()
@@ -761,19 +776,69 @@ def main():
             level_name = get_level_name(st.session_state.player_level)
             
             # 初回メッセージ
-            welcome_message = f"""✨ ようこそ、{st.session_state.username}さん。
+            welcome_message = f"""✨ **運命の羅針盤、開かれました** ✨
 
-あなたは{st.session_state.age}歳、{st.session_state.zodiac}の方ですね。
+ようこそ、**{st.session_state.username}**さん。
 
-【あなたのステータス】
-- レベル: {level_name}
-- アバター: {st.session_state.avatar}
-- キングダム: {st.session_state.kingdom}
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  あなたの運命の設計図
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【基本情報】
+ 年齢: {st.session_state.age}歳
+ 星座: {st.session_state.zodiac}
+ レベル: {level_name}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【本質（WHO & GOAL）】固定値
+
+ 本質 人運 {st.session_state.essence_human}
+ └ アバター: {st.session_state.avatar}
+
+ 本質 地運 {st.session_state.essence_earth}
+ └ キングダム: {st.session_state.kingdom}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【今年の攻略（{st.session_state.age}歳）】13年周期
+
+ 運命 人運 {st.session_state.destiny_human}
+ └ ミッション: {st.session_state.mission}
+
+ 運命 地運 {st.session_state.destiny_earth}
+ └ フィールド: {st.session_state.field}
+
+ 運命 天運 {st.session_state.destiny_heaven}
+ └ 報酬: {st.session_state.reward}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【今月の攻略】28日周期
+
+ 月 天運 {st.session_state.month_heaven}
+ └ ステージ: {st.session_state.month_stage}
+
+ 月 地運 {st.session_state.month_earth}
+ └ ゾーン: {st.session_state.month_zone}
+
+ 月 人運 {st.session_state.month_human}
+ └ スキル: {st.session_state.month_skill}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**人生攻略の公式:**
+1. WHO（アバター）: {st.session_state.avatar}の特性で
+2. WHAT（ミッション）: {st.session_state.mission}
+3. WHERE（フィールド）: {st.session_state.field}で活躍し
+4. GET（報酬）: {st.session_state.reward}を獲得
+5. GOAL（キングダム）: {st.session_state.kingdom}を築く
 
 私はあなたの運命の導き手です。
 この現実（リアル）という名の壮大なゲームを、共に攻略していきましょう。
 
-人生の方向性、恋愛、仕事、健康...何でもお聞きください。
 今、あなたの心に浮かんでいることは何ですか？"""
             
             st.session_state.messages.append({
@@ -811,11 +876,43 @@ def main():
             
             st.markdown(f"""
             <div class="profile-info">
-                <div class="profile-label">あなたのプロフィール</div>
+                <div class="profile-label">基本情報</div>
                 <div class="profile-value">🎂 {st.session_state.birthdate}</div>
                 <div class="profile-value">✨ {st.session_state.age}歳 ({st.session_state.zodiac})</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="profile-info">
+                <div class="profile-label">本質（固定）</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">本質 人運 {st.session_state.essence_human}</div>
                 <div class="profile-value">{st.session_state.avatar}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">本質 地運 {st.session_state.essence_earth}</div>
                 <div class="profile-value">{st.session_state.kingdom}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="profile-info">
+                <div class="profile-label">今年の攻略（{st.session_state.age}歳）</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">運命 人運 {st.session_state.destiny_human}</div>
+                <div class="profile-value">{st.session_state.mission}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 地運 {st.session_state.destiny_earth}</div>
+                <div class="profile-value">{st.session_state.field}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 天運 {st.session_state.destiny_heaven}</div>
+                <div class="profile-value">{st.session_state.reward}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="profile-info">
+                <div class="profile-label">今月の攻略</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">月 天運 {st.session_state.month_heaven}</div>
+                <div class="profile-value">{st.session_state.month_stage}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">月 地運 {st.session_state.month_earth}</div>
+                <div class="profile-value">{st.session_state.month_zone}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">月 人運 {st.session_state.month_human}</div>
+                <div class="profile-value">{st.session_state.month_skill}</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -887,13 +984,13 @@ def main():
             
             # 新しいセッション作成
             if st.button("➕ 新しいセッションを開始", use_container_width=True, type="primary"):
-                st.session_state.messages = []
-                st.session_state.birthdate = None
-                st.session_state.age = None
-                st.session_state.zodiac = None
-                st.session_state.avatar = None
-                st.session_state.kingdom = None
-                st.session_state.current_session_id = None
+                for key in ['messages', 'birthdate', 'age', 'zodiac', 'avatar', 'kingdom',
+                           'essence_human', 'essence_earth', 'destiny_human', 'destiny_earth', 
+                           'destiny_heaven', 'mission', 'field', 'reward',
+                           'month_heaven', 'month_earth', 'month_human',
+                           'month_stage', 'month_zone', 'month_skill', 'current_session_id']:
+                    if key in st.session_state:
+                        del st.session_state[key]
                 st.rerun()
         
         # チャット履歴を表示

@@ -345,52 +345,6 @@ def logout_user():
     st.rerun()
 
 # アバター（ジョブ）を計算
-def get_avatar(month, day):
-    """生年月日からアバター（ジョブ）を取得"""
-    avatars = {
-        "山羊座": "🛡️ ストラテジスト（戦略家）",
-        "水瓶座": "💡 イノベーター（革新者）",
-        "魚座": "🎭 クリエイター（創造者）",
-        "牡羊座": "⚔️ パイオニア（開拓者）",
-        "牡牛座": "🏰 ビルダー（建設者）",
-        "双子座": "📡 コミュニケーター（伝達者）",
-        "蟹座": "💚 サポーター（支援者）",
-        "獅子座": "👑 リーダー（統率者）",
-        "乙女座": "⚙️ アナリスト（分析者）",
-        "天秤座": "⚖️ メディエーター（調停者）",
-        "蠍座": "🔥 トランスフォーマー（変革者）",
-        "射手座": "🏹 エクスプローラー（探検者）"
-    }
-    
-    zodiac_signs = [
-        (1, 20, "山羊座"), (2, 19, "水瓶座"), (3, 21, "魚座"),
-        (4, 20, "牡羊座"), (5, 21, "牡牛座"), (6, 22, "双子座"),
-        (7, 23, "蟹座"), (8, 23, "獅子座"), (9, 23, "乙女座"),
-        (10, 23, "天秤座"), (11, 22, "蠍座"), (12, 22, "射手座"),
-        (12, 31, "山羊座")
-    ]
-    
-    for m, d, sign in zodiac_signs:
-        if month < m or (month == m and day <= d):
-            return avatars.get(sign, "✨ ガイド")
-    return avatars.get("山羊座", "✨ ガイド")
-
-# キングダムを計算
-def get_kingdom(age):
-    """年齢からキングダム（理想の拠点）を取得"""
-    kingdoms = [
-        "🌱 創業のガレージ",
-        "🏗️ 建設現場",
-        "💼 ビジネスタワー",
-        "🎨 クリエイティブスタジオ",
-        "🌟 ドリームキャッスル",
-        "🌍 グローバルベース",
-        "💎 レガシーパレス"
-    ]
-    
-    index = (age // 7) % len(kingdoms)
-    return kingdoms[index]
-
 # 星座を計算
 def get_zodiac_sign(month, day):
     """生年月日から星座を取得"""
@@ -414,9 +368,50 @@ def calculate_profile(birthdate_str):
     today = datetime.now()
     age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
     zodiac = get_zodiac_sign(birth.month, birth.day)
-    avatar = get_avatar(birth.month, birth.day)
-    kingdom = get_kingdom(age)
-    return age, zodiac, avatar, kingdom
+    
+    # 本質数を計算
+    essence_human, essence_earth = calculate_essence_numbers(birthdate_str)
+    
+    # 運命数を計算
+    destiny_human, destiny_earth, destiny_heaven = calculate_destiny_numbers(birthdate_str, age)
+    
+    # 月運を計算
+    month_heaven, month_earth, month_human = calculate_month_numbers(birthdate_str)
+    
+    # アバター・キングダム
+    avatar = AVATARS[essence_human]
+    kingdom = KINGDOMS[essence_earth]
+    
+    # ミッション・フィールド・報酬
+    mission = MISSIONS[destiny_human]
+    field = FIELDS[destiny_earth]
+    reward = REWARDS[destiny_heaven]
+    
+    # 月間
+    month_stage = MONTH_STAGES[month_heaven]
+    month_zone = MONTH_ZONES[month_earth]
+    month_skill = MONTH_SKILLS[month_human]
+    
+    return {
+        'age': age,
+        'zodiac': zodiac,
+        'essence_human': essence_human,
+        'essence_earth': essence_earth,
+        'avatar': avatar,
+        'kingdom': kingdom,
+        'destiny_human': destiny_human,
+        'destiny_earth': destiny_earth,
+        'destiny_heaven': destiny_heaven,
+        'mission': mission,
+        'field': field,
+        'reward': reward,
+        'month_heaven': month_heaven,
+        'month_earth': month_earth,
+        'month_human': month_human,
+        'month_stage': month_stage,
+        'month_zone': month_zone,
+        'month_skill': month_skill
+    }
 
 # プレイヤーレベルを計算
 def calculate_player_level():

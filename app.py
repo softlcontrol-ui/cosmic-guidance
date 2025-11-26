@@ -713,8 +713,19 @@ def save_player_status():
             'updated_at': datetime.now().isoformat()
         }
         
-        # upsert（存在すれば更新、なければ挿入）
-        supabase.table('player_status').upsert(data).execute()
+        # 既存レコードをチェック
+        existing = supabase.table('player_status').select('username').eq(
+            'username', st.session_state.username
+        ).execute()
+        
+        if existing.data:
+            # 既存レコードがある場合は更新
+            supabase.table('player_status').update(data).eq(
+                'username', st.session_state.username
+            ).execute()
+        else:
+            # 既存レコードがない場合は挿入
+            supabase.table('player_status').insert(data).execute()
         
         return True
     except Exception as e:
@@ -1061,8 +1072,19 @@ def add_gift_fragment():
             'is_complete': st.session_state.gift_fragments == 0 and st.session_state.completed_gifts > 0
         }
         
-        # upsert（ユニーク制約を自動検出）
-        supabase.table('gifts').upsert(gift_data).execute()
+        # 既存レコードをチェック
+        existing = supabase.table('gifts').select('username').eq(
+            'username', st.session_state.username
+        ).eq('gift_year', current_year).execute()
+        
+        if existing.data:
+            # 既存レコードがある場合は更新
+            supabase.table('gifts').update(gift_data).eq(
+                'username', st.session_state.username
+            ).eq('gift_year', current_year).execute()
+        else:
+            # 既存レコードがない場合は挿入
+            supabase.table('gifts').insert(gift_data).execute()
         
         return True
     except Exception as e:

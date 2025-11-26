@@ -440,11 +440,11 @@ AVATAR_LEVELS = {
 
 # キングダムランク定義
 KINGDOM_RANKS = {
-    0: {"name": "Rank 0: 荒地", "kp_required": 0},
-    1: {"name": "Rank 1: 集落", "kp_required": 100},
-    2: {"name": "Rank 2: 街", "kp_required": 500},
-    3: {"name": "Rank 3: 都市", "kp_required": 1500},
-    4: {"name": "Rank 4: 王国", "kp_required": 5000}
+    0: {"name": "Rank 0: 荒地", "kp_required": 0, "gifts_required": 0},
+    1: {"name": "Rank 1: 集落", "kp_required": 100, "gifts_required": 1},
+    2: {"name": "Rank 2: 街", "kp_required": 500, "gifts_required": 2},
+    3: {"name": "Rank 3: 都市", "kp_required": 1500, "gifts_required": 3},
+    4: {"name": "Rank 4: 王国", "kp_required": 5000, "gifts_required": 5}
 }
 
 def calculate_essence_numbers(birthdate_str):
@@ -612,6 +612,18 @@ if 'active_quest' not in st.session_state:
 if 'show_report_form' not in st.session_state:
     st.session_state.show_report_form = False
 
+# Phase 2用の状態
+if 'gift_fragments' not in st.session_state:
+    st.session_state.gift_fragments = 0
+if 'completed_gifts' not in st.session_state:
+    st.session_state.completed_gifts = 0
+if 'last_login_date' not in st.session_state:
+    st.session_state.last_login_date = None
+if 'last_quest_date' not in st.session_state:
+    st.session_state.last_quest_date = None
+if 'entropy_warning_shown' not in st.session_state:
+    st.session_state.entropy_warning_shown = False
+
 # Supabase接続
 @st.cache_resource
 def get_supabase_client() -> Client:
@@ -666,6 +678,11 @@ def load_player_status():
             st.session_state.avatar_level = data['avatar_level']
             st.session_state.kingdom_rank = data['kingdom_rank']
             st.session_state.max_ap = data['max_ap']
+            
+            # Phase 2: 日付フィールド
+            st.session_state.last_login_date = data.get('last_login_date')
+            st.session_state.last_quest_date = data.get('last_quest_date')
+            
             return True
         
         return False
@@ -691,6 +708,8 @@ def save_player_status():
             'avatar_level': st.session_state.avatar_level,
             'kingdom_rank': st.session_state.kingdom_rank,
             'max_ap': st.session_state.max_ap,
+            'last_login_date': datetime.now().date().isoformat() if st.session_state.last_login_date else datetime.now().date().isoformat(),
+            'last_quest_date': st.session_state.last_quest_date,
             'updated_at': datetime.now().isoformat()
         }
         
@@ -778,6 +797,10 @@ def create_quest(quest_type, title, description, advice):
         if result.data:
             st.session_state.active_quest = result.data[0]
             
+            # Phase 2: 月の課題の場合、最終受注日を更新
+            if quest_type == 'monthly_challenge':
+                st.session_state.last_quest_date = datetime.now().date().isoformat()
+            
             # プレイヤーステータスを保存
             save_player_status()
             
@@ -856,6 +879,10 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
         
         # レベルアップチェック
         check_level_up()
+        
+        # Phase 2: 月の課題の場合、ギフトカケラを追加
+        if quest['quest_type'] == 'monthly_challenge':
+            add_gift_fragment()
         
         # ステータスを保存
         save_player_status()
@@ -1026,6 +1053,22 @@ def load_from_supabase():
             
             # プレイヤーレベルを計算（旧システム）
             st.session_state.player_level = calculate_player_level()
+            
+            # Phase 2: ギフトデータを読み込む
+            load_gifts()
+            
+            # Phase 2: 自然回復チェック
+            check_daily_login()
+            
+            # Phase 2: エントロピーチェック
+            entropy_status = check_entropy()
+            if entropy_status == "penalty":
+                apply_entropy_penalty()
+            elif entropy_status == "warning_7days" and not st.session_state.entropy_warning_shown:
+                st.warning("⚠️ あと7日以内に月の課題を受注してください！エントロピーペナルティが発生します。")
+                st.session_state.entropy_warning_shown = True
+            elif entropy_status == "warning_3days":
+                st.error("🚨 あと3日以内に月の課題を受注してください！エントロピーペナルティまで残りわずかです！")
             
             return True
     except Exception as e:
@@ -1470,6 +1513,14 @@ def main():
                     <span class="resource-label">🪙 COIN</span>
                     <span class="resource-value">{st.session_state.coin}</span>
                 </div>
+                <div class="resource-item">
+                    <span class="resource-label">🎁 ギフト</span>
+                    <span class="resource-value">{st.session_state.completed_gifts}個</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">✨ カケラ</span>
+                    <span class="resource-value">{st.session_state.gift_fragments} / 5</span>
+                </div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1481,6 +1532,16 @@ def main():
                 <div class="level-badge">{KINGDOM_RANKS[st.session_state.kingdom_rank]['name']}</div>
             </div>
             """, unsafe_allow_html=True)
+            
+            # Phase 2: ランクアップボタン
+            if st.session_state.kingdom_rank < 4:
+                can_rankup, message = can_rankup_kingdom()
+                if can_rankup:
+                    if st.button("🏰 キングダムをランクアップ", use_container_width=True, type="primary"):
+                        if rankup_kingdom():
+                            st.rerun()
+                else:
+                    st.caption(message)
             
             st.markdown(f"""
             <div class="profile-info">
@@ -1847,3 +1908,230 @@ if __name__ == "__main__":
         © 2024 THE PLAYER - Powered by Google Gemini AI
     </footer>
     """, unsafe_allow_html=True)
+
+# ==================== Phase 2: 新機能 ====================
+
+# 自然回復チェック
+def check_daily_login():
+    """毎日のログイン時にAPを自然回復"""
+    if not st.session_state.username:
+        return
+    
+    today = datetime.now().date()
+    last_login = st.session_state.last_login_date
+    
+    # 最終ログイン日が文字列の場合、dateオブジェクトに変換
+    if isinstance(last_login, str):
+        last_login = datetime.fromisoformat(last_login).date()
+    
+    # 初回ログインまたは日付が変わっている場合
+    if last_login is None or last_login < today:
+        # APが0の場合のみ+1回復
+        if st.session_state.ap == 0:
+            st.session_state.ap = 1
+            st.success("☀️ 新しい日が始まりました！APが1回復しました。")
+        
+        # 最終ログイン日を更新
+        st.session_state.last_login_date = today.isoformat()
+        save_player_status()
+
+# エントロピーチェック
+def check_entropy():
+    """28日ごとの月の課題受注チェック"""
+    if not st.session_state.username or not st.session_state.last_quest_date:
+        return None
+    
+    last_quest = st.session_state.last_quest_date
+    if isinstance(last_quest, str):
+        last_quest = datetime.fromisoformat(last_quest).date()
+    
+    today = datetime.now().date()
+    days_since_quest = (today - last_quest).days
+    
+    # 28日経過したらペナルティ
+    if days_since_quest >= 28:
+        return "penalty"
+    # 21日経過（残り7日）で警告
+    elif days_since_quest >= 21:
+        return "warning_7days"
+    # 25日経過（残り3日）で最終警告
+    elif days_since_quest >= 25:
+        return "warning_3days"
+    
+    return None
+
+# エントロピーペナルティ適用
+def apply_entropy_penalty():
+    """エントロピーペナルティを適用"""
+    if not st.session_state.username:
+        return False
+    
+    try:
+        # AP半減
+        st.session_state.ap = st.session_state.ap // 2
+        
+        # KP没収
+        lost_kp = st.session_state.kp
+        st.session_state.kp = 0
+        
+        # 最終クエスト日をリセット
+        st.session_state.last_quest_date = datetime.now().date().isoformat()
+        
+        # 保存
+        save_player_status()
+        
+        st.error(f"""
+⚠️ **エントロピー（自然減衰）が発生しました！**
+
+28日間、月の課題を受注しなかったため：
+- AP半減: {st.session_state.ap * 2} → {st.session_state.ap}
+- KP没収: {lost_kp} KP を失いました
+
+定期的に月の課題を受注して、エントロピーを防ぎましょう！
+        """)
+        
+        return True
+    except Exception as e:
+        st.error(f"ペナルティ適用エラー: {e}")
+        return False
+
+# ギフトデータを読み込む
+def load_gifts():
+    """Supabaseからギフトデータを読み込む"""
+    if not st.session_state.username:
+        return False
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # 今年のギフトを取得
+        current_year = datetime.now().year
+        response = supabase.table('gifts').select('*').eq(
+            'username', st.session_state.username
+        ).eq('gift_year', current_year).execute()
+        
+        if response.data:
+            data = response.data[0]
+            st.session_state.gift_fragments = data['fragment_count']
+            st.session_state.completed_gifts = 1 if data['is_complete'] else 0
+        else:
+            # データがない場合は初期化
+            st.session_state.gift_fragments = 0
+            st.session_state.completed_gifts = 0
+        
+        return True
+    except Exception as e:
+        st.warning(f"⚠️ ギフトデータ読み込みエラー: {e}")
+        return False
+
+# ギフトカケラを追加
+def add_gift_fragment():
+    """月の課題クリアでカケラを追加"""
+    if not st.session_state.username:
+        return False
+    
+    try:
+        supabase = get_supabase_client()
+        current_year = datetime.now().year
+        
+        # カケラを+1
+        st.session_state.gift_fragments += 1
+        
+        # 5カケラで1ギフト完成
+        if st.session_state.gift_fragments >= 5:
+            st.session_state.completed_gifts += 1
+            st.session_state.gift_fragments = 0
+            
+            # ギフト完成通知
+            st.success(f"""
+🎁 **天運ギフトが完成しました！**
+
+カケラ5個を集めて、今年の天運ギフトが完成しました。
+キングダムのランクアップに使用できます。
+
+完成したギフト: {st.session_state.completed_gifts}個
+            """)
+        
+        # Supabaseに保存
+        gift_data = {
+            'username': st.session_state.username,
+            'gift_year': current_year,
+            'gift_name': f'{current_year}年の天運ギフト',
+            'fragment_count': st.session_state.gift_fragments,
+            'is_complete': st.session_state.gift_fragments == 0 and st.session_state.completed_gifts > 0
+        }
+        
+        # upsert
+        supabase.table('gifts').upsert(gift_data, on_conflict='username,gift_year').execute()
+        
+        return True
+    except Exception as e:
+        st.warning(f"⚠️ ギフト追加エラー: {e}")
+        return False
+
+# キングダムランクアップ可能かチェック
+def can_rankup_kingdom():
+    """キングダムをランクアップできるかチェック"""
+    current_rank = st.session_state.kingdom_rank
+    
+    # すでに最高ランク
+    if current_rank >= 4:
+        return False, "すでに最高ランク（Rank 4: 王国）です"
+    
+    next_rank = current_rank + 1
+    required_kp = KINGDOM_RANKS[next_rank]['kp_required']
+    required_gifts = KINGDOM_RANKS[next_rank]['gifts_required']
+    
+    # KP不足
+    if st.session_state.kp < required_kp:
+        return False, f"KPが不足しています（必要: {required_kp} KP、所持: {st.session_state.kp} KP）"
+    
+    # ギフト不足
+    if st.session_state.completed_gifts < required_gifts:
+        return False, f"天運ギフトが不足しています（必要: {required_gifts}個、所持: {st.session_state.completed_gifts}個）"
+    
+    return True, f"ランクアップ可能！（消費: {required_kp} KP + ギフト{required_gifts}個）"
+
+# キングダムランクアップ実行
+def rankup_kingdom():
+    """キングダムをランクアップ"""
+    if not st.session_state.username:
+        return False
+    
+    # チェック
+    can_rankup, message = can_rankup_kingdom()
+    if not can_rankup:
+        st.error(message)
+        return False
+    
+    try:
+        next_rank = st.session_state.kingdom_rank + 1
+        required_kp = KINGDOM_RANKS[next_rank]['kp_required']
+        required_gifts = KINGDOM_RANKS[next_rank]['gifts_required']
+        
+        # KPとギフトを消費
+        st.session_state.kp -= required_kp
+        st.session_state.completed_gifts -= required_gifts
+        
+        # ランクアップ
+        st.session_state.kingdom_rank = next_rank
+        
+        # 保存
+        save_player_status()
+        
+        st.success(f"""
+🏰 **キングダムがランクアップしました！**
+
+{KINGDOM_RANKS[next_rank-1]['name']} → {KINGDOM_RANKS[next_rank]['name']}
+
+消費:
+- {required_kp} KP
+- 天運ギフト {required_gifts}個
+
+理想の拠点が、また一歩近づきました！
+        """)
+        
+        return True
+    except Exception as e:
+        st.error(f"ランクアップエラー: {e}")
+        return False

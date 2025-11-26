@@ -2136,13 +2136,64 @@ def main():
                     else:
                         st.warning("報告内容を入力してください")
         
-        # チャット履歴を表示
+        # チャット履歴を表示（スクロール可能）
         st.markdown("---")
         st.markdown("### 💬 会話履歴")
         
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+        # スクロール可能なチャットコンテナのスタイル
+        st.markdown("""
+        <style>
+        /* チャット履歴エリアのスタイル */
+        [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        /* スクロールバーのカスタマイズ */
+        [data-testid="stVerticalBlock"]::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        [data-testid="stVerticalBlock"]::-webkit-scrollbar-track {
+            background: #1e1e1e;
+            border-radius: 5px;
+        }
+        
+        [data-testid="stVerticalBlock"]::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 5px;
+        }
+        
+        [data-testid="stVerticalBlock"]::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+        
+        /* チャットメッセージのスタイル改善 */
+        [data-testid="stChatMessage"] {
+            margin-bottom: 1rem;
+        }
+        
+        /* 下部の入力欄固定 */
+        .stChatInput {
+            position: sticky;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent, #0e1117 20%);
+            padding-top: 2rem;
+            z-index: 100;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # チャット履歴を表示
+        if st.session_state.messages:
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+        else:
+            st.info("まだ会話がありません。クエストを受注して始めましょう！")
+        
+        # 区切り線
+        st.markdown("<br>" * 2, unsafe_allow_html=True)
         
         # ユーザー入力を無効化（クエスト必須）
         if st.session_state.active_quest:

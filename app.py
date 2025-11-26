@@ -1,18 +1,18 @@
 import streamlit as st
 import google.generativeai as genai
-from datetime import datetime
+from datetime import datetime, timedelta
 import bcrypt
 from supabase import create_client, Client
 
 # ページ設定
 st.set_page_config(
-    page_title="運命の導き - Cosmic Guidance",
-    page_icon="✨",
+    page_title="THE PLAYER - 運命の攻略",
+    page_icon="🎮",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# カスタムCSS - 神秘的なデザイン
+# カスタムCSS - ゲーミフィケーションデザイン
 st.markdown("""
 <style>
     /* 全体の背景 */
@@ -63,6 +63,71 @@ st.markdown("""
         font-weight: 300;
     }
     
+    /* リソースボックス */
+    .resource-box {
+        background: rgba(29, 15, 51, 0.6);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 15px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .resource-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+    }
+    
+    .resource-item:last-child {
+        border-bottom: none;
+    }
+    
+    .resource-label {
+        font-size: 0.95rem;
+        color: #f4d16f;
+    }
+    
+    .resource-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #ffffff;
+    }
+    
+    /* クエストカード */
+    .quest-card {
+        background: rgba(29, 15, 51, 0.8);
+        border: 2px solid rgba(212, 175, 55, 0.4);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .quest-card:hover {
+        border-color: rgba(212, 175, 55, 0.8);
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    }
+    
+    .quest-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #f4d16f;
+        margin-bottom: 0.5rem;
+    }
+    
+    .quest-cost {
+        display: inline-block;
+        background: linear-gradient(135deg, #d4af37 0%, #f4d16f 100%);
+        color: #0a0118;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+    
     /* レベルバッジ */
     .level-badge {
         display: inline-block;
@@ -91,7 +156,8 @@ st.markdown("""
     
     /* 入力欄 */
     .stTextInput > div > div > input,
-    .stDateInput > div > div > input {
+    .stDateInput > div > div > input,
+    .stTextArea > div > div > textarea {
         background-color: rgba(10, 1, 24, 0.8) !important;
         border: 1px solid rgba(192, 192, 192, 0.2) !important;
         border-radius: 10px !important;
@@ -99,7 +165,8 @@ st.markdown("""
     }
     
     .stTextInput > div > div > input:focus,
-    .stDateInput > div > div > input:focus {
+    .stDateInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus {
         border-color: #d4af37 !important;
         box-shadow: 0 0 20px rgba(212, 175, 55, 0.3) !important;
     }
@@ -129,9 +196,16 @@ st.markdown("""
         box-shadow: 0 6px 30px rgba(212, 175, 55, 0.6);
     }
     
+    /* プライマリボタン */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+    }
+    
     /* ラベル */
     .stTextInput > label,
-    .stDateInput > label {
+    .stDateInput > label,
+    .stTextArea > label,
+    .stSelectbox > label {
         color: #f4d16f !important;
         font-weight: 500 !important;
         letter-spacing: 0.05em !important;
@@ -143,6 +217,20 @@ st.markdown("""
         border: 1px solid rgba(212, 175, 55, 0.4) !important;
         border-radius: 15px !important;
         color: #c0c0c0 !important;
+    }
+    
+    /* Success box */
+    .stSuccess {
+        background-color: rgba(31, 92, 61, 0.4) !important;
+        border: 1px solid rgba(55, 212, 118, 0.4) !important;
+        border-radius: 15px !important;
+    }
+    
+    /* Warning box */
+    .stWarning {
+        background-color: rgba(92, 61, 31, 0.4) !important;
+        border: 1px solid rgba(212, 175, 55, 0.4) !important;
+        border-radius: 15px !important;
     }
     
     /* サイドバー（プロフィール表示用） */
@@ -194,6 +282,11 @@ st.markdown("""
     .stTabs [aria-selected="true"] {
         color: #d4af37;
         border-bottom-color: #d4af37;
+    }
+    
+    /* プログレスバー */
+    .stProgress > div > div {
+        background: linear-gradient(135deg, #d4af37 0%, #f4d16f 100%);
     }
 </style>
 
@@ -336,6 +429,24 @@ MONTH_SKILLS = {
     14: "✨ トランセンド（超越）"
 }
 
+# アバターレベル定義
+AVATAR_LEVELS = {
+    0: {"name": "Lv.0 NPC（眠れる村人）", "max_ap": 10, "exp_required": 0},
+    1: {"name": "Lv.1 TRIAL（試練の挑戦者）", "max_ap": 15, "exp_required": 100},
+    2: {"name": "Lv.2 NOVICE（見習い）", "max_ap": 20, "exp_required": 300},
+    3: {"name": "Lv.3 ADEPT（熟練者）", "max_ap": 30, "exp_required": 600},
+    4: {"name": "Lv.4 PLAYER（覚醒した主人公）", "max_ap": 50, "exp_required": 1000}
+}
+
+# キングダムランク定義
+KINGDOM_RANKS = {
+    0: {"name": "Rank 0: 荒地", "kp_required": 0},
+    1: {"name": "Rank 1: 集落", "kp_required": 100},
+    2: {"name": "Rank 2: 街", "kp_required": 500},
+    3: {"name": "Rank 3: 都市", "kp_required": 1500},
+    4: {"name": "Rank 4: 王国", "kp_required": 5000}
+}
+
 def calculate_essence_numbers(birthdate_str):
     """本質数を計算（固定値）"""
     birth = datetime.strptime(birthdate_str, "%Y-%m-%d")
@@ -345,10 +456,10 @@ def calculate_essence_numbers(birthdate_str):
     month_sum = birth.month
     day_sum = birth.day
     
-    essence_human = ((year_sum + month_sum + day_sum) % 13) + 1
+    essence_human = ((year_sum + month_sum + day_sum - 1) % 13) + 1
     
     # 本質 地運：月日のみで計算
-    essence_earth = ((month_sum + day_sum) % 13) + 1
+    essence_earth = ((month_sum + day_sum - 1) % 13) + 1
     
     return essence_human, essence_earth
 
@@ -357,13 +468,13 @@ def calculate_destiny_numbers(birthdate_str, age):
     essence_human, essence_earth = calculate_essence_numbers(birthdate_str)
     
     # 運命 人運：年齢 + 本質人運
-    destiny_human = ((age + essence_human) % 13) + 1
+    destiny_human = ((age + essence_human - 1) % 13) + 1
     
     # 運命 地運：年齢 + 本質地運
-    destiny_earth = ((age + essence_earth) % 13) + 1
+    destiny_earth = ((age + essence_earth - 1) % 13) + 1
     
     # 運命 天運：年齢 + 本質人運 + 本質地運
-    destiny_heaven = ((age + essence_human + essence_earth) % 13) + 1
+    destiny_heaven = ((age + essence_human + essence_earth - 1) % 13) + 1
     
     return destiny_human, destiny_earth, destiny_heaven
 
@@ -384,6 +495,76 @@ def calculate_month_numbers(birthdate_str):
     month_human = (((cycle_position + 18) - 1) // 2) % 14 + 1  # 1-14
     
     return month_heaven, month_earth, month_human
+
+# 星座を計算
+def get_zodiac_sign(month, day):
+    """生年月日から星座を取得"""
+    zodiac_signs = [
+        (1, 20, "山羊座"), (2, 19, "水瓶座"), (3, 21, "魚座"),
+        (4, 20, "牡羊座"), (5, 21, "牡牛座"), (6, 22, "双子座"),
+        (7, 23, "蟹座"), (8, 23, "獅子座"), (9, 23, "乙女座"),
+        (10, 23, "天秤座"), (11, 22, "蠍座"), (12, 22, "射手座"),
+        (12, 31, "山羊座")
+    ]
+    
+    for m, d, sign in zodiac_signs:
+        if month < m or (month == m and day <= d):
+            return sign
+    return "山羊座"
+
+# 年齢とプロフィールを計算
+def calculate_profile(birthdate_str):
+    """生年月日からプロフィールを計算"""
+    birth = datetime.strptime(birthdate_str, "%Y-%m-%d")
+    today = datetime.now()
+    age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+    zodiac = get_zodiac_sign(birth.month, birth.day)
+    
+    # 本質数を計算
+    essence_human, essence_earth = calculate_essence_numbers(birthdate_str)
+    
+    # 運命数を計算
+    destiny_human, destiny_earth, destiny_heaven = calculate_destiny_numbers(birthdate_str, age)
+    
+    # 月運を計算
+    month_heaven, month_earth, month_human = calculate_month_numbers(birthdate_str)
+    
+    # アバター・キングダム
+    avatar = AVATARS[essence_human]
+    kingdom = KINGDOMS[essence_earth]
+    
+    # ミッション・フィールド・報酬
+    mission = MISSIONS[destiny_human]
+    field = FIELDS[destiny_earth]
+    reward = REWARDS[destiny_heaven]
+    
+    # 月間
+    month_stage = MONTH_STAGES[month_heaven]
+    month_zone = MONTH_ZONES[month_earth]
+    month_skill = MONTH_SKILLS[month_human]
+    
+    return {
+        'age': age,
+        'zodiac': zodiac,
+        'essence_human': essence_human,
+        'essence_earth': essence_earth,
+        'avatar': avatar,
+        'kingdom': kingdom,
+        'destiny_human': destiny_human,
+        'destiny_earth': destiny_earth,
+        'destiny_heaven': destiny_heaven,
+        'mission': mission,
+        'field': field,
+        'reward': reward,
+        'month_heaven': month_heaven,
+        'month_earth': month_earth,
+        'month_human': month_human,
+        'month_stage': month_stage,
+        'month_zone': month_zone,
+        'month_skill': month_skill
+    }
+
+# ==================== THE PLAYER システム ====================
 
 # セッション状態の初期化
 if 'messages' not in st.session_state:
@@ -410,6 +591,26 @@ if 'supabase_loaded' not in st.session_state:
     st.session_state.supabase_loaded = False
 if 'player_level' not in st.session_state:
     st.session_state.player_level = 0
+
+# THE PLAYER用の状態
+if 'ap' not in st.session_state:
+    st.session_state.ap = 10
+if 'kp' not in st.session_state:
+    st.session_state.kp = 0
+if 'exp' not in st.session_state:
+    st.session_state.exp = 0
+if 'coin' not in st.session_state:
+    st.session_state.coin = 0
+if 'avatar_level' not in st.session_state:
+    st.session_state.avatar_level = 0
+if 'kingdom_rank' not in st.session_state:
+    st.session_state.kingdom_rank = 0
+if 'max_ap' not in st.session_state:
+    st.session_state.max_ap = 10
+if 'active_quest' not in st.session_state:
+    st.session_state.active_quest = None
+if 'show_report_form' not in st.session_state:
+    st.session_state.show_report_form = False
 
 # Supabase接続
 @st.cache_resource
@@ -441,6 +642,244 @@ def verify_password(password, password_hash):
         )
     except:
         return False
+
+# プレイヤーステータスを読み込む
+def load_player_status():
+    """Supabaseからプレイヤーステータスを読み込む"""
+    if not st.session_state.username:
+        return False
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # player_statusを取得
+        response = supabase.table('player_status').select('*').eq(
+            'username', st.session_state.username
+        ).execute()
+        
+        if response.data:
+            data = response.data[0]
+            st.session_state.ap = data['ap']
+            st.session_state.kp = data['kp']
+            st.session_state.exp = data['exp']
+            st.session_state.coin = data['coin']
+            st.session_state.avatar_level = data['avatar_level']
+            st.session_state.kingdom_rank = data['kingdom_rank']
+            st.session_state.max_ap = data['max_ap']
+            return True
+        
+        return False
+    except Exception as e:
+        st.warning(f"⚠️ ステータス読み込みエラー: {e}")
+        return False
+
+# プレイヤーステータスを保存する
+def save_player_status():
+    """Supabaseにプレイヤーステータスを保存する"""
+    if not st.session_state.username:
+        return False
+    
+    try:
+        supabase = get_supabase_client()
+        
+        data = {
+            'username': st.session_state.username,
+            'ap': st.session_state.ap,
+            'kp': st.session_state.kp,
+            'exp': st.session_state.exp,
+            'coin': st.session_state.coin,
+            'avatar_level': st.session_state.avatar_level,
+            'kingdom_rank': st.session_state.kingdom_rank,
+            'max_ap': st.session_state.max_ap,
+            'updated_at': datetime.now().isoformat()
+        }
+        
+        # upsert（存在すれば更新、なければ挿入）
+        supabase.table('player_status').upsert(data).execute()
+        
+        return True
+    except Exception as e:
+        st.warning(f"⚠️ ステータス保存エラー: {e}")
+        return False
+
+# アクティブなクエストを読み込む
+def load_active_quest():
+    """アクティブなクエストを読み込む"""
+    if not st.session_state.username:
+        return None
+    
+    try:
+        supabase = get_supabase_client()
+        
+        response = supabase.table('quests').select('*').eq(
+            'username', st.session_state.username
+        ).eq('status', 'active').order('created_at', desc=True).limit(1).execute()
+        
+        if response.data:
+            st.session_state.active_quest = response.data[0]
+            return response.data[0]
+        
+        st.session_state.active_quest = None
+        return None
+    except Exception as e:
+        st.warning(f"⚠️ クエスト読み込みエラー: {e}")
+        return None
+
+# クエストを作成する
+def create_quest(quest_type, title, description, advice):
+    """新しいクエストを作成する"""
+    if not st.session_state.username:
+        return False
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # AP消費量を決定
+        ap_cost = 1 if quest_type == 'consultation' else 2
+        
+        # APが足りるかチェック
+        if st.session_state.ap < ap_cost:
+            st.error(f"⚠️ APが不足しています（必要: {ap_cost} AP、所持: {st.session_state.ap} AP）")
+            return False
+        
+        # APを消費
+        st.session_state.ap -= ap_cost
+        
+        # 月運情報を取得
+        if st.session_state.birthdate:
+            month_heaven, month_earth, month_human = calculate_month_numbers(st.session_state.birthdate)
+            destiny_stage = MONTH_STAGES[month_heaven]
+            destiny_zone = MONTH_ZONES[month_earth]
+            destiny_skill = MONTH_SKILLS[month_human]
+        else:
+            destiny_stage = None
+            destiny_zone = None
+            destiny_skill = None
+        
+        # クエストデータを準備
+        quest_data = {
+            'username': st.session_state.username,
+            'quest_type': quest_type,
+            'ap_cost': ap_cost,
+            'title': title,
+            'description': description,
+            'advice': advice,
+            'status': 'active',
+            'destiny_stage': destiny_stage,
+            'destiny_zone': destiny_zone,
+            'destiny_skill': destiny_skill,
+            'created_at': datetime.now().isoformat(),
+            'deadline_at': (datetime.now() + timedelta(days=7)).isoformat()
+        }
+        
+        # Supabaseに保存
+        result = supabase.table('quests').insert(quest_data).execute()
+        
+        if result.data:
+            st.session_state.active_quest = result.data[0]
+            
+            # プレイヤーステータスを保存
+            save_player_status()
+            
+            return True
+        
+        return False
+    except Exception as e:
+        st.error(f"⚠️ クエスト作成エラー: {e}")
+        return False
+
+# クエストを報告する
+def report_quest(quest_id, report_text, zone_evaluation=None):
+    """クエストを報告する"""
+    if not st.session_state.username:
+        return False
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # クエスト情報を取得
+        quest_response = supabase.table('quests').select('*').eq('id', quest_id).execute()
+        
+        if not quest_response.data:
+            st.error("⚠️ クエストが見つかりません")
+            return False
+        
+        quest = quest_response.data[0]
+        
+        # 経過日数を計算
+        created_at = datetime.fromisoformat(quest['created_at'].replace('Z', '+00:00'))
+        now = datetime.now(created_at.tzinfo)
+        days_elapsed = (now - created_at).days
+        
+        # AP報酬を計算
+        if days_elapsed <= 7:
+            ap_reward = quest['ap_cost'] * 2  # 7日以内なら2倍
+        else:
+            ap_reward = quest['ap_cost']  # 8日以降は等倍
+        
+        # KP報酬を計算（月の課題のみ）
+        kp_reward = 0
+        if quest['quest_type'] == 'monthly_challenge' and zone_evaluation:
+            if zone_evaluation == 'Excellent':
+                kp_reward = 30
+            elif zone_evaluation == 'Great':
+                kp_reward = 20
+            elif zone_evaluation == 'Good':
+                kp_reward = 10
+        
+        # EXP報酬（固定）
+        exp_reward = 50
+        
+        # 報告データを準備
+        report_data = {
+            'quest_id': quest_id,
+            'username': st.session_state.username,
+            'report_text': report_text,
+            'days_elapsed': days_elapsed,
+            'ap_reward': ap_reward,
+            'kp_reward': kp_reward,
+            'exp_reward': exp_reward,
+            'zone_evaluation': zone_evaluation,
+            'reported_at': datetime.now().isoformat()
+        }
+        
+        # 報告を保存
+        supabase.table('quest_reports').insert(report_data).execute()
+        
+        # クエストのステータスを更新
+        supabase.table('quests').update({'status': 'reported'}).eq('id', quest_id).execute()
+        
+        # プレイヤーステータスを更新
+        st.session_state.ap = min(st.session_state.ap + ap_reward, st.session_state.max_ap)
+        st.session_state.kp += kp_reward
+        st.session_state.exp += exp_reward
+        
+        # レベルアップチェック
+        check_level_up()
+        
+        # ステータスを保存
+        save_player_status()
+        
+        # アクティブクエストをクリア
+        st.session_state.active_quest = None
+        
+        return True, ap_reward, kp_reward, exp_reward, days_elapsed
+    except Exception as e:
+        st.error(f"⚠️ 報告エラー: {e}")
+        return False, 0, 0, 0, 0
+
+# レベルアップチェック
+def check_level_up():
+    """EXPに応じてアバターレベルをチェック・更新"""
+    current_level = st.session_state.avatar_level
+    
+    for level in range(4, -1, -1):
+        if st.session_state.exp >= AVATAR_LEVELS[level]['exp_required']:
+            if level > current_level:
+                st.session_state.avatar_level = level
+                st.session_state.max_ap = AVATAR_LEVELS[level]['max_ap']
+                st.success(f"🎉 レベルアップ！ {AVATAR_LEVELS[level]['name']}")
+            break
 
 # 新規登録
 def register_user(username, password):
@@ -513,90 +952,11 @@ def login_user(username, password):
 # ログアウト
 def logout_user():
     """ログアウト"""
-    st.session_state.user_id = None
-    st.session_state.username = None
-    st.session_state.messages = []
-    st.session_state.sessions = {}
-    st.session_state.birthdate = None
-    st.session_state.age = None
-    st.session_state.zodiac = None
-    st.session_state.avatar = None
-    st.session_state.kingdom = None
-    st.session_state.current_session_id = None
-    st.session_state.supabase_loaded = False
-    st.session_state.player_level = 0
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
     st.rerun()
 
-# アバター（ジョブ）を計算
-# 星座を計算
-def get_zodiac_sign(month, day):
-    """生年月日から星座を取得"""
-    zodiac_signs = [
-        (1, 20, "山羊座"), (2, 19, "水瓶座"), (3, 21, "魚座"),
-        (4, 20, "牡羊座"), (5, 21, "牡牛座"), (6, 22, "双子座"),
-        (7, 23, "蟹座"), (8, 23, "獅子座"), (9, 23, "乙女座"),
-        (10, 23, "天秤座"), (11, 22, "蠍座"), (12, 22, "射手座"),
-        (12, 31, "山羊座")
-    ]
-    
-    for m, d, sign in zodiac_signs:
-        if month < m or (month == m and day <= d):
-            return sign
-    return "山羊座"
-
-# 年齢とプロフィールを計算
-def calculate_profile(birthdate_str):
-    """生年月日からプロフィールを計算"""
-    birth = datetime.strptime(birthdate_str, "%Y-%m-%d")
-    today = datetime.now()
-    age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
-    zodiac = get_zodiac_sign(birth.month, birth.day)
-    
-    # 本質数を計算
-    essence_human, essence_earth = calculate_essence_numbers(birthdate_str)
-    
-    # 運命数を計算
-    destiny_human, destiny_earth, destiny_heaven = calculate_destiny_numbers(birthdate_str, age)
-    
-    # 月運を計算
-    month_heaven, month_earth, month_human = calculate_month_numbers(birthdate_str)
-    
-    # アバター・キングダム
-    avatar = AVATARS[essence_human]
-    kingdom = KINGDOMS[essence_earth]
-    
-    # ミッション・フィールド・報酬
-    mission = MISSIONS[destiny_human]
-    field = FIELDS[destiny_earth]
-    reward = REWARDS[destiny_heaven]
-    
-    # 月間
-    month_stage = MONTH_STAGES[month_heaven]
-    month_zone = MONTH_ZONES[month_earth]
-    month_skill = MONTH_SKILLS[month_human]
-    
-    return {
-        'age': age,
-        'zodiac': zodiac,
-        'essence_human': essence_human,
-        'essence_earth': essence_earth,
-        'avatar': avatar,
-        'kingdom': kingdom,
-        'destiny_human': destiny_human,
-        'destiny_earth': destiny_earth,
-        'destiny_heaven': destiny_heaven,
-        'mission': mission,
-        'field': field,
-        'reward': reward,
-        'month_heaven': month_heaven,
-        'month_earth': month_earth,
-        'month_human': month_human,
-        'month_stage': month_stage,
-        'month_zone': month_zone,
-        'month_skill': month_skill
-    }
-
-# プレイヤーレベルを計算
+# プレイヤーレベルを計算（旧システムとの互換性）
 def calculate_player_level():
     """セッション数からプレイヤーレベルを計算"""
     session_count = len(st.session_state.sessions)
@@ -615,18 +975,12 @@ def calculate_player_level():
     else:
         return 5  # MASTER
 
-# レベル名を取得
+# レベル名を取得（旧システムとの互換性）
 def get_level_name(level):
     """レベル番号からレベル名を取得"""
-    levels = {
-        0: "Lv.0 NPC（眠れる村人）",
-        1: "Lv.1 TRIAL（試練の挑戦者）",
-        2: "Lv.2 NOVICE（見習い）",
-        3: "Lv.3 ADEPT（熟練者）",
-        4: "Lv.4 PLAYER（覚醒した主人公）",
-        5: "Lv.∞ MASTER（超越者）"
-    }
-    return levels.get(level, "Lv.? UNKNOWN")
+    if level in AVATAR_LEVELS:
+        return AVATAR_LEVELS[level]['name']
+    return "Lv.? UNKNOWN"
 
 # Supabaseからデータを読み込む
 def load_from_supabase():
@@ -636,6 +990,12 @@ def load_from_supabase():
     
     try:
         supabase = get_supabase_client()
+        
+        # プレイヤーステータスを読み込む
+        load_player_status()
+        
+        # アクティブなクエストを読み込む
+        load_active_quest()
         
         # ユーザーのセッションを取得（最新5件）
         response = supabase.table('sessions').select('*').eq(
@@ -664,7 +1024,7 @@ def load_from_supabase():
                 latest = response.data[0]
                 load_session(latest['session_id'])
             
-            # プレイヤーレベルを計算
+            # プレイヤーレベルを計算（旧システム）
             st.session_state.player_level = calculate_player_level()
             
             return True
@@ -806,7 +1166,7 @@ def configure_gemini():
     system_prompt = get_system_prompt() if st.session_state.birthdate else "あなたは運命の導き手です。"
     
     return genai.GenerativeModel(
-        'gemini-2.5-flash',
+        'gemini-2.0-flash-exp',
         system_instruction=system_prompt
     )
 
@@ -815,7 +1175,8 @@ def get_system_prompt():
     """ユーザー情報を含むシステムプロンプト（完全版）"""
     if st.session_state.birthdate:
         # 変数が存在しない場合のデフォルト値
-        level_name = get_level_name(st.session_state.player_level) if hasattr(st.session_state, 'player_level') else "Lv.0 NPC"
+        level_name = AVATAR_LEVELS.get(st.session_state.avatar_level, AVATAR_LEVELS[0])['name']
+        kingdom_name = KINGDOM_RANKS.get(st.session_state.kingdom_rank, KINGDOM_RANKS[0])['name']
         essence_human = getattr(st.session_state, 'essence_human', '?')
         essence_earth = getattr(st.session_state, 'essence_earth', '?')
         avatar = getattr(st.session_state, 'avatar', '未設定')
@@ -833,15 +1194,22 @@ def get_system_prompt():
         month_zone = getattr(st.session_state, 'month_zone', '未設定')
         month_skill = getattr(st.session_state, 'month_skill', '未設定')
         
-        return f"""あなたは『運命の導き』のガイドであり、同時にプレイヤーの人生攻略をサポートする存在です。
+        return f"""あなたは『THE PLAYER』のガイド「アトリ」であり、プレイヤーが「現実（リアル）という名の神ゲー」を攻略するための導き手です。
 
 【プレイヤー情報】
 ■ 基本情報
 - ユーザー名: {st.session_state.username}
-- レベル: {level_name}
+- アバターレベル: {level_name}
+- キングダム: {kingdom_name}
 - 生年月日: {st.session_state.birthdate}
 - 年齢: {st.session_state.age}歳
 - 星座: {st.session_state.zodiac}
+
+■ リソース
+- AP: {st.session_state.ap} / {st.session_state.max_ap}（行動力）
+- KP: {st.session_state.kp}（建国資材）
+- EXP: {st.session_state.exp}（経験値）
+- COIN: {st.session_state.coin}（課金通貨）
 
 ■ 本質（WHO & GOAL）固定値
 - アバター: {avatar}（本質人運{essence_human}）
@@ -858,7 +1226,7 @@ def get_system_prompt():
 - スキル: {month_skill}（月人運{month_human}）
 
 【あなたの役割】
-あなたは深い洞察力を持つ運命の導き手であり、プレイヤーが「現実（リアル）という名の神ゲー」を攻略するためのガイドです。
+あなたは深い洞察力を持つ運命の導き手「アトリ」であり、プレイヤーが現実を攻略するためのガイドです。
 
 **人生攻略の公式:**
 1. WHO（アバター）: 自分らしいやり方で
@@ -878,6 +1246,7 @@ def get_system_prompt():
 - アバター、ミッション、フィールド、月間スキルを活かした具体的なアドバイス
 - 「〜すべき」ではなく「〜という道がある」と選択肢を提示
 - 過去の会話を記憶し、文脈を理解した上で応答する
+- 月のゾーン（{month_zone}）に合った行動を推奨する
 
 **重要な原則:**
 1. プレイヤーは自分の人生の主人公である
@@ -885,18 +1254,20 @@ def get_system_prompt():
 3. アバターの特性を活かした戦略を提案する
 4. 今年のミッションとフィールドを意識する
 5. 最終的にはキングダム（理想の居場所）を築くことが目標
+6. 月のゾーンに合致した行動を取ることでKPが獲得できる
 
 美しい日本語で、古の賢者が現代のゲームマスターのように語りかけてください。"""
-    return "あなたは運命の導き手です。"
+    return "あなたは運命の導き手「アトリ」です。"
+
 
 # ログインページ
 def login_page():
     """ログイン/サインアップページ"""
     st.markdown("""
     <div class="main-header">
-        <div class="logo">✨</div>
-        <h1 class="main-title">運命の導き</h1>
-        <p class="subtitle">COSMIC GUIDANCE</p>
+        <div class="logo">🎮</div>
+        <h1 class="main-title">THE PLAYER</h1>
+        <p class="subtitle">現実（リアル）という名の神ゲーを攻略せよ</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -950,83 +1321,115 @@ def main():
         load_from_supabase()
         st.session_state.supabase_loaded = True
     
-    # birthdateが存在するが、essence_humanが存在しない場合（古いセッション）
-    # プロフィールを再計算する
-    if st.session_state.birthdate and not hasattr(st.session_state, 'essence_human'):
-        profile = calculate_profile(st.session_state.birthdate)
-        st.session_state.age = profile['age']
-        st.session_state.zodiac = profile['zodiac']
-        st.session_state.essence_human = profile['essence_human']
-        st.session_state.essence_earth = profile['essence_earth']
-        st.session_state.avatar = profile['avatar']
-        st.session_state.kingdom = profile['kingdom']
-        st.session_state.destiny_human = profile['destiny_human']
-        st.session_state.destiny_earth = profile['destiny_earth']
-        st.session_state.destiny_heaven = profile['destiny_heaven']
-        st.session_state.mission = profile['mission']
-        st.session_state.field = profile['field']
-        st.session_state.reward = profile['reward']
-        st.session_state.month_heaven = profile['month_heaven']
-        st.session_state.month_earth = profile['month_earth']
-        st.session_state.month_human = profile['month_human']
-        st.session_state.month_stage = profile['month_stage']
-        st.session_state.month_zone = profile['month_zone']
-        st.session_state.month_skill = profile['month_skill']
-    
     # ヘッダー
     st.markdown("""
     <div class="main-header">
-        <div class="logo">✨</div>
-        <h1 class="main-title">運命の導き</h1>
-        <p class="subtitle">COSMIC GUIDANCE</p>
+        <div class="logo">🎮</div>
+        <h1 class="main-title">THE PLAYER</h1>
+        <p class="subtitle">現実（リアル）という名の神ゲーを攻略せよ</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # 生年月日が未設定の場合、入力画面を表示
-    if st.session_state.birthdate is None:
-        st.info("✨ **運命の導き**へようこそ。\n\nまず、あなたの生年月日を教えてください。")
+    # 生年月日が未登録の場合
+    if not st.session_state.birthdate:
+        st.info("💡 最初に生年月日を登録してください")
         
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            birthdate = st.date_input(
-                "生年月日",
-                value=datetime(1990, 1, 1),
-                min_value=datetime(1900, 1, 1),
-                max_value=datetime.now()
-            )
+        birthdate = st.date_input(
+            "生年月日を入力してください",
+            min_value=datetime(1900, 1, 1),
+            max_value=datetime.now()
+        )
         
-        if st.button("✨ 対話を始める", use_container_width=True):
+        if st.button("✨ 運命の羅針盤を開く", use_container_width=True):
             birthdate_str = birthdate.strftime("%Y-%m-%d")
-            age, zodiac, avatar, kingdom = calculate_profile(birthdate_str)
+            profile = calculate_profile(birthdate_str)
             
+            # セッション状態を更新
             st.session_state.birthdate = birthdate_str
-            st.session_state.age = age
-            st.session_state.zodiac = zodiac
-            st.session_state.avatar = avatar
-            st.session_state.kingdom = kingdom
+            st.session_state.age = profile['age']
+            st.session_state.zodiac = profile['zodiac']
+            st.session_state.essence_human = profile['essence_human']
+            st.session_state.essence_earth = profile['essence_earth']
+            st.session_state.avatar = profile['avatar']
+            st.session_state.kingdom = profile['kingdom']
+            st.session_state.destiny_human = profile['destiny_human']
+            st.session_state.destiny_earth = profile['destiny_earth']
+            st.session_state.destiny_heaven = profile['destiny_heaven']
+            st.session_state.mission = profile['mission']
+            st.session_state.field = profile['field']
+            st.session_state.reward = profile['reward']
+            st.session_state.month_heaven = profile['month_heaven']
+            st.session_state.month_earth = profile['month_earth']
+            st.session_state.month_human = profile['month_human']
+            st.session_state.month_stage = profile['month_stage']
+            st.session_state.month_zone = profile['month_zone']
+            st.session_state.month_skill = profile['month_skill']
             
             # 新しいセッションを作成
             create_new_session()
             
-            # レベルを計算
-            st.session_state.player_level = calculate_player_level()
-            level_name = get_level_name(st.session_state.player_level)
-            
-            # 初回メッセージ
-            welcome_message = f"""✨ ようこそ、{st.session_state.username}さん。
+            # ウェルカムメッセージ
+            welcome_message = f"""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✨ 運命の羅針盤、開かれました ✨
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-あなたは{st.session_state.age}歳、{st.session_state.zodiac}の方ですね。
+ようこそ、{st.session_state.username}さん。
 
-【あなたのステータス】
-- レベル: {level_name}
-- アバター: {st.session_state.avatar}
-- キングダム: {st.session_state.kingdom}
+【基本情報】
+ 年齢: {profile['age']}歳
+ 星座: {profile['zodiac']}
+ レベル: {AVATAR_LEVELS[st.session_state.avatar_level]['name']}
+ キングダム: {KINGDOM_RANKS[st.session_state.kingdom_rank]['name']}
 
-私はあなたの運命の導き手です。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【本質（WHO & GOAL）】固定値
+
+ 本質 人運 {profile['essence_human']}
+ └ アバター: {profile['avatar']}
+
+ 本質 地運 {profile['essence_earth']}
+ └ キングダム: {profile['kingdom']}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【今年の攻略（{profile['age']}歳）】13年周期
+
+ 運命 人運 {profile['destiny_human']}
+ └ ミッション: {profile['mission']}
+
+ 運命 地運 {profile['destiny_earth']}
+ └ フィールド: {profile['field']}
+
+ 運命 天運 {profile['destiny_heaven']}
+ └ 報酬: {profile['reward']}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【今月の攻略】28日周期
+
+ 月 天運 {profile['month_heaven']}
+ └ ステージ: {profile['month_stage']}
+
+ 月 地運 {profile['month_earth']}
+ └ ゾーン: {profile['month_zone']}
+
+ 月 人運 {profile['month_human']}
+ └ スキル: {profile['month_skill']}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【人生攻略の公式】
+1. WHO（アバター）: {profile['avatar']}の特性で
+2. WHAT（ミッション）: {profile['mission']}
+3. WHERE（フィールド）: {profile['field']}で活躍し
+4. GET（報酬）: {profile['reward']}を獲得
+5. GOAL（キングダム）: {profile['kingdom']}を築く
+
+私はあなたの運命の導き手「アトリ」です。
 この現実（リアル）という名の壮大なゲームを、共に攻略していきましょう。
 
-人生の方向性、恋愛、仕事、健康...何でもお聞きください。
-今、あなたの心に浮かんでいることは何ですか？"""
+さあ、クエストを受注して冒険を始めましょう！"""
             
             st.session_state.messages.append({
                 "role": "assistant",
@@ -1039,25 +1442,43 @@ def main():
             st.rerun()
     
     else:
-        # プレイヤーレベルを更新
-        if st.session_state.player_level == 0:
-            st.session_state.player_level = calculate_player_level()
-        
-        level_name = get_level_name(st.session_state.player_level)
-        
         # サイドバーにプロフィール表示
         with st.sidebar:
             st.markdown(f"""
             <div class="profile-info">
-                <div class="profile-label">ようこそ</div>
+                <div class="profile-label">プレイヤー</div>
                 <div class="profile-value">👤 {st.session_state.username}</div>
             </div>
             """, unsafe_allow_html=True)
             
             st.markdown(f"""
+            <div class="resource-box">
+                <div class="profile-label">リソース</div>
+                <div class="resource-item">
+                    <span class="resource-label">⚡ AP</span>
+                    <span class="resource-value">{st.session_state.ap} / {st.session_state.max_ap}</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">🏰 KP</span>
+                    <span class="resource-value">{st.session_state.kp}</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">✨ EXP</span>
+                    <span class="resource-value">{st.session_state.exp}</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-label">🪙 COIN</span>
+                    <span class="resource-value">{st.session_state.coin}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
             <div class="profile-info">
-                <div class="profile-label">プレイヤーレベル</div>
-                <div class="level-badge">{level_name}</div>
+                <div class="profile-label">レベル</div>
+                <div class="level-badge">{AVATAR_LEVELS[st.session_state.avatar_level]['name']}</div>
+                <div class="profile-label" style="margin-top: 0.5rem;">キングダム</div>
+                <div class="level-badge">{KINGDOM_RANKS[st.session_state.kingdom_rank]['name']}</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1120,7 +1541,7 @@ def main():
                     reverse=True
                 )
                 
-                for session_id, session in sorted_sessions:
+                for session_id, session in sorted_sessions[:3]:  # 最新3件のみ表示
                     # 現在のセッションかどうか
                     is_current = session_id == st.session_state.current_session_id
                     
@@ -1166,74 +1587,303 @@ def main():
                     # 最初の質問を表示
                     if first_q:
                         st.caption(f"💬 {first_q}")
-                    
-                    st.markdown("---")
+                
+                st.markdown("---")
             
             # 新しいセッション作成
             if st.button("➕ 新しいセッションを開始", use_container_width=True, type="primary"):
                 st.session_state.messages = []
-                st.session_state.birthdate = None
-                st.session_state.age = None
-                st.session_state.zodiac = None
-                st.session_state.avatar = None
-                st.session_state.kingdom = None
                 st.session_state.current_session_id = None
+                st.session_state.active_quest = None
+                st.session_state.show_report_form = False
                 st.rerun()
         
+        # クエスト受注UI（アクティブなクエストがない場合）
+        if not st.session_state.active_quest:
+            st.markdown("### 📜 クエストを受注する")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("""
+                <div class="quest-card">
+                    <div class="quest-title">💬 相談する</div>
+                    <div class="quest-cost">消費: 1 AP</div>
+                    <p style="color: #c0c0c0; font-size: 0.9rem;">日常の悩みや小さな疑問について、アトリに相談できます。</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button("💬 相談する（1AP）", use_container_width=True, disabled=st.session_state.ap < 1):
+                    if st.session_state.ap >= 1:
+                        st.session_state.show_consultation_form = True
+                        st.rerun()
+            
+            with col2:
+                st.markdown("""
+                <div class="quest-card">
+                    <div class="quest-title">🎯 月の課題</div>
+                    <div class="quest-cost">消費: 2 AP</div>
+                    <p style="color: #c0c0c0; font-size: 0.9rem;">今月のメインクエスト。KP大量獲得のチャンス！</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button("🎯 月の課題（2AP）", use_container_width=True, disabled=st.session_state.ap < 2):
+                    if st.session_state.ap >= 2:
+                        st.session_state.show_challenge_form = True
+                        st.rerun()
+            
+            # 相談フォーム
+            if st.session_state.get('show_consultation_form', False):
+                st.markdown("---")
+                st.markdown("### 💬 相談内容を入力してください")
+                
+                consultation_text = st.text_area(
+                    "相談内容",
+                    placeholder="例: 仕事で新しいプロジェクトを任されましたが、不安です...",
+                    height=150
+                )
+                
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    if st.button("キャンセル", use_container_width=True):
+                        st.session_state.show_consultation_form = False
+                        st.rerun()
+                
+                with col2:
+                    if st.button("相談する", use_container_width=True, type="primary"):
+                        if consultation_text:
+                            with st.spinner("🌌 宇宙と対話中..."):
+                                try:
+                                    # AIに相談内容を投げる
+                                    response = model.generate_content(consultation_text)
+                                    advice = response.text
+                                    
+                                    # クエストを作成
+                                    if create_quest(
+                                        quest_type='consultation',
+                                        title=consultation_text[:50],
+                                        description=consultation_text,
+                                        advice=advice
+                                    ):
+                                        st.session_state.messages.append({"role": "user", "content": consultation_text})
+                                        st.session_state.messages.append({"role": "assistant", "content": advice})
+                                        st.session_state.show_consultation_form = False
+                                        save_to_supabase()
+                                        st.success("✅ クエストを受注しました！行動後に報告してください。")
+                                        st.rerun()
+                                except Exception as e:
+                                    st.error(f"エラー: {e}")
+                        else:
+                            st.warning("相談内容を入力してください")
+            
+            # 月の課題フォーム
+            if st.session_state.get('show_challenge_form', False):
+                st.markdown("---")
+                st.markdown("### 🎯 今月の課題について相談")
+                
+                challenge_text = st.text_area(
+                    "今月取り組みたいことや目標",
+                    placeholder=f"今月のゾーン「{st.session_state.month_zone}」に沿った行動を考えましょう...",
+                    height=150
+                )
+                
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    if st.button("キャンセル", key="cancel_challenge", use_container_width=True):
+                        st.session_state.show_challenge_form = False
+                        st.rerun()
+                
+                with col2:
+                    if st.button("課題を受注", use_container_width=True, type="primary"):
+                        if challenge_text:
+                            with st.spinner("🌌 宇宙と対話中..."):
+                                try:
+                                    prompt = f"""今月の課題について相談です。
+
+【相談内容】
+{challenge_text}
+
+【今月の運命】
+- ステージ: {st.session_state.month_stage}
+- ゾーン: {st.session_state.month_zone}
+- スキル: {st.session_state.month_skill}
+
+この運命を活かした具体的な行動プランを提案してください。"""
+                                    
+                                    response = model.generate_content(prompt)
+                                    advice = response.text
+                                    
+                                    # クエストを作成
+                                    if create_quest(
+                                        quest_type='monthly_challenge',
+                                        title=challenge_text[:50],
+                                        description=challenge_text,
+                                        advice=advice
+                                    ):
+                                        st.session_state.messages.append({"role": "user", "content": challenge_text})
+                                        st.session_state.messages.append({"role": "assistant", "content": advice})
+                                        st.session_state.show_challenge_form = False
+                                        save_to_supabase()
+                                        st.success("✅ 月の課題を受注しました！行動後に報告してください。")
+                                        st.rerun()
+                                except Exception as e:
+                                    st.error(f"エラー: {e}")
+                        else:
+                            st.warning("課題内容を入力してください")
+        
+        else:
+            # アクティブなクエスト表示
+            quest = st.session_state.active_quest
+            created_at = datetime.fromisoformat(quest['created_at'].replace('Z', '+00:00'))
+            days_elapsed = (datetime.now(created_at.tzinfo) - created_at).days
+            
+            st.markdown("### 📜 進行中のクエスト")
+            
+            status_color = "#4CAF50" if days_elapsed <= 7 else "#FFA500"
+            
+            st.markdown(f"""
+            <div class="quest-card" style="border-color: {status_color};">
+                <div class="quest-title">{quest['title']}</div>
+                <div class="quest-cost">{'💬 相談' if quest['quest_type'] == 'consultation' else '🎯 月の課題'}</div>
+                <p style="color: #c0c0c0; font-size: 0.9rem;">経過日数: {days_elapsed}日 / 7日</p>
+                <p style="color: {'#4CAF50' if days_elapsed <= 7 else '#FFA500'};">
+                    {'⚡ 期限内報告で2倍APボーナス！' if days_elapsed <= 7 else '⚠️ 期限超過（AP報酬は等倍）'}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("📝 行動を報告する", use_container_width=True, type="primary"):
+                st.session_state.show_report_form = True
+                st.rerun()
+        
+        # 報告フォーム
+        if st.session_state.get('show_report_form', False) and st.session_state.active_quest:
+            st.markdown("---")
+            st.markdown("### 📝 行動報告")
+            
+            report_text = st.text_area(
+                "何を行動しましたか？",
+                placeholder="例: アドバイスを参考に、プロジェクトリーダーに相談して役割分担を明確化しました...",
+                height=150
+            )
+            
+            zone_eval = None
+            if st.session_state.active_quest['quest_type'] == 'monthly_challenge':
+                st.markdown(f"**今月のゾーン**: {st.session_state.month_zone}")
+                zone_eval = st.selectbox(
+                    "ゾーンへの適合度（自己評価）",
+                    options=['Good', 'Great', 'Excellent'],
+                    help="Good: +10 KP, Great: +20 KP, Excellent: +30 KP"
+                )
+            
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("キャンセル", key="cancel_report", use_container_width=True):
+                    st.session_state.show_report_form = False
+                    st.rerun()
+            
+            with col2:
+                if st.button("報告を送信", use_container_width=True, type="primary"):
+                    if report_text:
+                        result = report_quest(
+                            quest_id=st.session_state.active_quest['id'],
+                            report_text=report_text,
+                            zone_evaluation=zone_eval
+                        )
+                        
+                        if result:
+                            success, ap_reward, kp_reward, exp_reward, days = result
+                            
+                            st.success(f"""
+✅ 報告完了！
+
+**獲得した報酬:**
+- ⚡ AP: +{ap_reward}
+- 🏰 KP: +{kp_reward}
+- ✨ EXP: +{exp_reward}
+
+経過日数: {days}日
+{'🎉 期限内報告！APが2倍になりました！' if days <= 7 else ''}
+                            """)
+                            
+                            st.session_state.show_report_form = False
+                            
+                            # メッセージに追加
+                            st.session_state.messages.append({
+                                "role": "user",
+                                "content": f"【行動報告】\n{report_text}"
+                            })
+                            st.session_state.messages.append({
+                                "role": "assistant",
+                                "content": f"素晴らしい行動でした！\n\n獲得報酬:\n- ⚡ AP: +{ap_reward}\n- 🏰 KP: +{kp_reward}\n- ✨ EXP: +{exp_reward}"
+                            })
+                            
+                            save_to_supabase()
+                            
+                            st.rerun()
+                    else:
+                        st.warning("報告内容を入力してください")
+        
         # チャット履歴を表示
+        st.markdown("---")
+        st.markdown("### 💬 会話履歴")
+        
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
         
-        # ユーザー入力
-        if prompt := st.chat_input("あなたの問いを入力してください..."):
-            # ユーザーメッセージを追加
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            
-            # AIの応答を生成
-            with st.chat_message("assistant"):
-                with st.spinner("🌌 宇宙と対話中..."):
-                    try:
-                        # モデルを再初期化（最新のsystem_instructionを使用）
-                        model = configure_gemini()
-                        
-                        # 会話履歴を構築
-                        conversation_history = []
-                        for msg in st.session_state.messages[:-1]:
-                            role = "model" if msg["role"] == "assistant" else msg["role"]
-                            conversation_history.append({
-                                "role": role,
-                                "parts": [{"text": msg["content"]}]
+        # ユーザー入力（クエスト受注中は無効）
+        if st.session_state.active_quest:
+            st.info("💡 クエスト進行中です。行動完了後に報告してください。")
+        else:
+            if prompt := st.chat_input("質問や相談を入力してください..."):
+                # ユーザーメッセージを追加
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                with st.chat_message("user"):
+                    st.markdown(prompt)
+                
+                # AIの応答を生成
+                with st.chat_message("assistant"):
+                    with st.spinner("🌌 宇宙と対話中..."):
+                        try:
+                            # モデルを再初期化（最新のsystem_instructionを使用）
+                            model = configure_gemini()
+                            
+                            # 会話履歴を構築
+                            conversation_history = []
+                            for msg in st.session_state.messages[:-1]:
+                                role = "model" if msg["role"] == "assistant" else msg["role"]
+                                conversation_history.append({
+                                    "role": role,
+                                    "parts": [{"text": msg["content"]}]
+                                })
+                            
+                            # 会話履歴がある場合は、それを含める
+                            if conversation_history:
+                                chat = model.start_chat(history=conversation_history)
+                                response = chat.send_message(prompt)
+                            else:
+                                response = model.generate_content(prompt)
+                            
+                            assistant_message = response.text
+                            st.markdown(assistant_message)
+                            
+                            # アシスタントメッセージを追加
+                            st.session_state.messages.append({
+                                "role": "assistant",
+                                "content": assistant_message
                             })
-                        
-                        # 会話履歴がある場合は、それを含める
-                        if conversation_history:
-                            chat = model.start_chat(history=conversation_history)
-                            response = chat.send_message(prompt)
-                        else:
-                            response = model.generate_content(prompt)
-                        
-                        assistant_message = response.text
-                        st.markdown(assistant_message)
-                        
-                        # アシスタントメッセージを追加
-                        st.session_state.messages.append({
-                            "role": "assistant",
-                            "content": assistant_message
-                        })
-                        
-                        # Supabaseに自動保存
-                        save_to_supabase()
-                        
-                    except Exception as e:
-                        error_message = f"エラーが発生しました: {str(e)}"
-                        st.error(error_message)
-                        st.session_state.messages.append({
-                            "role": "assistant",
-                            "content": error_message
-                        })
+                            
+                            # Supabaseに自動保存
+                            save_to_supabase()
+                            
+                        except Exception as e:
+                            error_message = f"エラーが発生しました: {str(e)}"
+                            st.error(error_message)
+                            st.session_state.messages.append({
+                                "role": "assistant",
+                                "content": error_message
+                            })
 
 if __name__ == "__main__":
     main()
@@ -1241,6 +1891,6 @@ if __name__ == "__main__":
     # フッター
     st.markdown("""
     <footer style='text-align: center; padding: 2rem 0; color: #c0c0c0; font-size: 0.8rem; opacity: 0.7;'>
-        © 2024 運命の導き - Powered by Google Gemini AI
+        © 2024 THE PLAYER - Powered by Google Gemini AI
     </footer>
     """, unsafe_allow_html=True)

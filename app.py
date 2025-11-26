@@ -2140,60 +2140,95 @@ def main():
         st.markdown("---")
         st.markdown("### 💬 会話履歴")
         
-        # スクロール可能なチャットコンテナのスタイル
-        st.markdown("""
-        <style>
-        /* チャット履歴エリアのスタイル */
-        [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        
-        /* スクロールバーのカスタマイズ */
-        [data-testid="stVerticalBlock"]::-webkit-scrollbar {
-            width: 10px;
-        }
-        
-        [data-testid="stVerticalBlock"]::-webkit-scrollbar-track {
-            background: #1e1e1e;
-            border-radius: 5px;
-        }
-        
-        [data-testid="stVerticalBlock"]::-webkit-scrollbar-thumb {
-            background: #555;
-            border-radius: 5px;
-        }
-        
-        [data-testid="stVerticalBlock"]::-webkit-scrollbar-thumb:hover {
-            background: #777;
-        }
-        
-        /* チャットメッセージのスタイル改善 */
-        [data-testid="stChatMessage"] {
-            margin-bottom: 1rem;
-        }
-        
-        /* 下部の入力欄固定 */
-        .stChatInput {
-            position: sticky;
-            bottom: 0;
-            background: linear-gradient(to bottom, transparent, #0e1117 20%);
-            padding-top: 2rem;
-            z-index: 100;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # チャット履歴を表示
+        # スクロール可能なチャットコンテナ（HTMLで実装）
         if st.session_state.messages:
+            import html
+            
+            # メッセージをHTMLで構築
+            chat_html = """
+            <div style="
+                max-height: 500px;
+                overflow-y: auto;
+                padding: 1rem;
+                border: 1px solid #333;
+                border-radius: 10px;
+                background-color: #1a1a1a;
+                margin-bottom: 1rem;
+            ">
+            """
+            
             for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+                role = message["role"]
+                content = html.escape(message["content"])
+                
+                # ユーザーとアシスタントで色分け
+                if role == "user":
+                    bg_color = "#2d2d2d"
+                    align = "right"
+                    icon = "👤"
+                else:
+                    bg_color = "#1e3a5f"
+                    align = "left"
+                    icon = "🤖"
+                
+                chat_html += f"""
+                <div style="
+                    text-align: {align};
+                    margin-bottom: 1rem;
+                ">
+                    <div style="
+                        display: inline-block;
+                        max-width: 80%;
+                        padding: 0.75rem 1rem;
+                        border-radius: 10px;
+                        background-color: {bg_color};
+                        text-align: left;
+                        white-space: pre-wrap;
+                        word-wrap: break-word;
+                    ">
+                        <strong>{icon} {role.capitalize()}</strong><br>
+                        {content}
+                    </div>
+                </div>
+                """
+            
+            chat_html += """
+            </div>
+            <style>
+            /* スクロールバーのカスタマイズ */
+            div::-webkit-scrollbar {
+                width: 10px;
+            }
+            div::-webkit-scrollbar-track {
+                background: #1e1e1e;
+                border-radius: 5px;
+            }
+            div::-webkit-scrollbar-thumb {
+                background: #555;
+                border-radius: 5px;
+            }
+            div::-webkit-scrollbar-thumb:hover {
+                background: #777;
+            }
+            </style>
+            <script>
+            // 自動的に一番下にスクロール
+            setTimeout(function() {
+                var chatDivs = document.querySelectorAll('div[style*="overflow-y: auto"]');
+                if (chatDivs.length > 0) {
+                    var lastDiv = chatDivs[chatDivs.length - 1];
+                    lastDiv.scrollTop = lastDiv.scrollHeight;
+                }
+            }, 100);
+            </script>
+            """
+            
+            st.markdown(chat_html, unsafe_allow_html=True)
         else:
             st.info("まだ会話がありません。クエストを受注して始めましょう！")
         
         # 区切り線
-        st.markdown("<br>" * 2, unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         
         # ユーザー入力を無効化（クエスト必須）
         if st.session_state.active_quest:

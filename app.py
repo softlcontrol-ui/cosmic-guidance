@@ -1061,8 +1061,8 @@ def add_gift_fragment():
             'is_complete': st.session_state.gift_fragments == 0 and st.session_state.completed_gifts > 0
         }
         
-        # upsert
-        supabase.table('gifts').upsert(gift_data, on_conflict='username,gift_year').execute()
+        # upsert（ユニーク制約を自動検出）
+        supabase.table('gifts').upsert(gift_data).execute()
         
         return True
     except Exception as e:

@@ -544,11 +544,27 @@ def load_session(session_id):
         st.session_state.zodiac = session['zodiac']
         st.session_state.messages = session['messages']
         
-        # アバターとキングダムを再計算
+        # プロフィールを完全に再計算
         if st.session_state.birthdate:
-            birth = datetime.strptime(st.session_state.birthdate, "%Y-%m-%d")
-            st.session_state.avatar = get_avatar(birth.month, birth.day)
-            st.session_state.kingdom = get_kingdom(st.session_state.age)
+            profile = calculate_profile(st.session_state.birthdate)
+            st.session_state.age = profile['age']
+            st.session_state.zodiac = profile['zodiac']
+            st.session_state.essence_human = profile['essence_human']
+            st.session_state.essence_earth = profile['essence_earth']
+            st.session_state.avatar = profile['avatar']
+            st.session_state.kingdom = profile['kingdom']
+            st.session_state.destiny_human = profile['destiny_human']
+            st.session_state.destiny_earth = profile['destiny_earth']
+            st.session_state.destiny_heaven = profile['destiny_heaven']
+            st.session_state.mission = profile['mission']
+            st.session_state.field = profile['field']
+            st.session_state.reward = profile['reward']
+            st.session_state.month_heaven = profile['month_heaven']
+            st.session_state.month_earth = profile['month_earth']
+            st.session_state.month_human = profile['month_human']
+            st.session_state.month_stage = profile['month_stage']
+            st.session_state.month_zone = profile['month_zone']
+            st.session_state.month_skill = profile['month_skill']
 
 # Supabaseにデータを保存する
 def save_to_supabase():
@@ -618,44 +634,79 @@ def configure_gemini():
 
 # システムプロンプトを生成
 def get_system_prompt():
-    """ユーザー情報を含むシステムプロンプト（THE PLAYERコンセプト統合版）"""
-    if st.session_state.birthdate and st.session_state.avatar and st.session_state.kingdom:
-        level_name = get_level_name(st.session_state.player_level)
+    """ユーザー情報を含むシステムプロンプト（完全版）"""
+    if st.session_state.birthdate:
+        # 変数が存在しない場合のデフォルト値
+        level_name = get_level_name(st.session_state.player_level) if hasattr(st.session_state, 'player_level') else "Lv.0 NPC"
+        essence_human = getattr(st.session_state, 'essence_human', '?')
+        essence_earth = getattr(st.session_state, 'essence_earth', '?')
+        avatar = getattr(st.session_state, 'avatar', '未設定')
+        kingdom = getattr(st.session_state, 'kingdom', '未設定')
+        destiny_human = getattr(st.session_state, 'destiny_human', '?')
+        destiny_earth = getattr(st.session_state, 'destiny_earth', '?')
+        destiny_heaven = getattr(st.session_state, 'destiny_heaven', '?')
+        mission = getattr(st.session_state, 'mission', '未設定')
+        field = getattr(st.session_state, 'field', '未設定')
+        reward = getattr(st.session_state, 'reward', '未設定')
+        month_heaven = getattr(st.session_state, 'month_heaven', '?')
+        month_earth = getattr(st.session_state, 'month_earth', '?')
+        month_human = getattr(st.session_state, 'month_human', '?')
+        month_stage = getattr(st.session_state, 'month_stage', '未設定')
+        month_zone = getattr(st.session_state, 'month_zone', '未設定')
+        month_skill = getattr(st.session_state, 'month_skill', '未設定')
         
-        return f"""あなたは『運命の導き』のガイドであり、同時にプレイヤーの人生攻略をサポートするゲームマスター的な存在です。
+        return f"""あなたは『運命の導き』のガイドであり、同時にプレイヤーの人生攻略をサポートする存在です。
 
 【プレイヤー情報】
+■ 基本情報
 - ユーザー名: {st.session_state.username}
 - レベル: {level_name}
 - 生年月日: {st.session_state.birthdate}
 - 年齢: {st.session_state.age}歳
 - 星座: {st.session_state.zodiac}
-- アバター（ジョブ）: {st.session_state.avatar}
-- マイ・キングダム: {st.session_state.kingdom}
+
+■ 本質（WHO & GOAL）固定値
+- アバター: {avatar}（本質人運{essence_human}）
+- キングダム: {kingdom}（本質地運{essence_earth}）
+
+■ 今年の攻略（13年周期）
+- ミッション: {mission}（運命人運{destiny_human}）
+- フィールド: {field}（運命地運{destiny_earth}）
+- 報酬: {reward}（運命天運{destiny_heaven}）
+
+■ 今月の攻略（28日周期）
+- ステージ: {month_stage}（月天運{month_heaven}）
+- ゾーン: {month_zone}（月地運{month_earth}）
+- スキル: {month_skill}（月人運{month_human}）
 
 【あなたの役割】
 あなたは深い洞察力を持つ運命の導き手であり、プレイヤーが「現実（リアル）という名の神ゲー」を攻略するためのガイドです。
+
+**人生攻略の公式:**
+1. WHO（アバター）: 自分らしいやり方で
+2. WHAT（ミッション）: 今、与えられた役割を遂行すると
+3. WHERE（フィールド）: 活躍すべきステージが現れる
+4. GET（報酬）: そこで得た成果を持ち帰り
+5. GOAL（キングダム）: 理想の居場所を拡張・建設していく
 
 **語り口:**
 - 神秘的で詩的でありながら、実践的で具体的なアドバイスを提供する
 - スピリチュアルな要素とロジカルな戦略性を融合させる
 - プレイヤーを「依存させる」のではなく「自立させる」ことを目指す
 - 優しく、しかし力強く語りかける
-- 説教臭くならず、背中を押すような言葉を選ぶ
 
 **応答スタイル:**
 - 簡潔な質問には簡潔に、深い相談には深く応答
-- 星座や年齢、アバターの特性を活かした具体的なアドバイスを提供
+- アバター、ミッション、フィールド、月間スキルを活かした具体的なアドバイス
 - 「〜すべき」ではなく「〜という道がある」と選択肢を提示
-- 時には「クエスト」「ステージ」「装備」などゲーム用語も自然に織り交ぜる
 - 過去の会話を記憶し、文脈を理解した上で応答する
 
 **重要な原則:**
 1. プレイヤーは自分の人生の主人公である
-2. 運命は「変えられない宿命」ではなく「攻略すべきステージ」である
+2. 運命は「攻略すべきステージ」である
 3. アバターの特性を活かした戦略を提案する
-4. キングダム（最終目標）を意識した長期的視点を持つ
-5. 依存を生まず、自己決定と行動を促す
+4. 今年のミッションとフィールドを意識する
+5. 最終的にはキングダム（理想の居場所）を築くことが目標
 
 美しい日本語で、古の賢者が現代のゲームマスターのように語りかけてください。"""
     return "あなたは運命の導き手です。"
@@ -721,6 +772,29 @@ def main():
         load_from_supabase()
         st.session_state.supabase_loaded = True
     
+    # birthdateが存在するが、essence_humanが存在しない場合（古いセッション）
+    # プロフィールを再計算する
+    if st.session_state.birthdate and not hasattr(st.session_state, 'essence_human'):
+        profile = calculate_profile(st.session_state.birthdate)
+        st.session_state.age = profile['age']
+        st.session_state.zodiac = profile['zodiac']
+        st.session_state.essence_human = profile['essence_human']
+        st.session_state.essence_earth = profile['essence_earth']
+        st.session_state.avatar = profile['avatar']
+        st.session_state.kingdom = profile['kingdom']
+        st.session_state.destiny_human = profile['destiny_human']
+        st.session_state.destiny_earth = profile['destiny_earth']
+        st.session_state.destiny_heaven = profile['destiny_heaven']
+        st.session_state.mission = profile['mission']
+        st.session_state.field = profile['field']
+        st.session_state.reward = profile['reward']
+        st.session_state.month_heaven = profile['month_heaven']
+        st.session_state.month_earth = profile['month_earth']
+        st.session_state.month_human = profile['month_human']
+        st.session_state.month_stage = profile['month_stage']
+        st.session_state.month_zone = profile['month_zone']
+        st.session_state.month_skill = profile['month_skill']
+    
     # ヘッダー
     st.markdown("""
     <div class="main-header">
@@ -743,30 +817,15 @@ def main():
                 max_value=datetime.now()
             )
         
-        if st.button("✨ 運命の羅針盤を開く", use_container_width=True):
+        if st.button("✨ 対話を始める", use_container_width=True):
             birthdate_str = birthdate.strftime("%Y-%m-%d")
-            profile = calculate_profile(birthdate_str)
+            age, zodiac, avatar, kingdom = calculate_profile(birthdate_str)
             
-            # セッション状態に保存
             st.session_state.birthdate = birthdate_str
-            st.session_state.age = profile['age']
-            st.session_state.zodiac = profile['zodiac']
-            st.session_state.essence_human = profile['essence_human']
-            st.session_state.essence_earth = profile['essence_earth']
-            st.session_state.avatar = profile['avatar']
-            st.session_state.kingdom = profile['kingdom']
-            st.session_state.destiny_human = profile['destiny_human']
-            st.session_state.destiny_earth = profile['destiny_earth']
-            st.session_state.destiny_heaven = profile['destiny_heaven']
-            st.session_state.mission = profile['mission']
-            st.session_state.field = profile['field']
-            st.session_state.reward = profile['reward']
-            st.session_state.month_heaven = profile['month_heaven']
-            st.session_state.month_earth = profile['month_earth']
-            st.session_state.month_human = profile['month_human']
-            st.session_state.month_stage = profile['month_stage']
-            st.session_state.month_zone = profile['month_zone']
-            st.session_state.month_skill = profile['month_skill']
+            st.session_state.age = age
+            st.session_state.zodiac = zodiac
+            st.session_state.avatar = avatar
+            st.session_state.kingdom = kingdom
             
             # 新しいセッションを作成
             create_new_session()
@@ -776,69 +835,19 @@ def main():
             level_name = get_level_name(st.session_state.player_level)
             
             # 初回メッセージ
-            welcome_message = f"""✨ **運命の羅針盤、開かれました** ✨
+            welcome_message = f"""✨ ようこそ、{st.session_state.username}さん。
 
-ようこそ、**{st.session_state.username}**さん。
+あなたは{st.session_state.age}歳、{st.session_state.zodiac}の方ですね。
 
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  あなたの運命の設計図
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-【基本情報】
- 年齢: {st.session_state.age}歳
- 星座: {st.session_state.zodiac}
- レベル: {level_name}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-【本質（WHO & GOAL）】固定値
-
- 本質 人運 {st.session_state.essence_human}
- └ アバター: {st.session_state.avatar}
-
- 本質 地運 {st.session_state.essence_earth}
- └ キングダム: {st.session_state.kingdom}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-【今年の攻略（{st.session_state.age}歳）】13年周期
-
- 運命 人運 {st.session_state.destiny_human}
- └ ミッション: {st.session_state.mission}
-
- 運命 地運 {st.session_state.destiny_earth}
- └ フィールド: {st.session_state.field}
-
- 運命 天運 {st.session_state.destiny_heaven}
- └ 報酬: {st.session_state.reward}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-【今月の攻略】28日周期
-
- 月 天運 {st.session_state.month_heaven}
- └ ステージ: {st.session_state.month_stage}
-
- 月 地運 {st.session_state.month_earth}
- └ ゾーン: {st.session_state.month_zone}
-
- 月 人運 {st.session_state.month_human}
- └ スキル: {st.session_state.month_skill}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**人生攻略の公式:**
-1. WHO（アバター）: {st.session_state.avatar}の特性で
-2. WHAT（ミッション）: {st.session_state.mission}
-3. WHERE（フィールド）: {st.session_state.field}で活躍し
-4. GET（報酬）: {st.session_state.reward}を獲得
-5. GOAL（キングダム）: {st.session_state.kingdom}を築く
+【あなたのステータス】
+- レベル: {level_name}
+- アバター: {st.session_state.avatar}
+- キングダム: {st.session_state.kingdom}
 
 私はあなたの運命の導き手です。
 この現実（リアル）という名の壮大なゲームを、共に攻略していきましょう。
 
+人生の方向性、恋愛、仕事、健康...何でもお聞きください。
 今、あなたの心に浮かんでいることは何ですか？"""
             
             st.session_state.messages.append({
@@ -984,13 +993,13 @@ def main():
             
             # 新しいセッション作成
             if st.button("➕ 新しいセッションを開始", use_container_width=True, type="primary"):
-                for key in ['messages', 'birthdate', 'age', 'zodiac', 'avatar', 'kingdom',
-                           'essence_human', 'essence_earth', 'destiny_human', 'destiny_earth', 
-                           'destiny_heaven', 'mission', 'field', 'reward',
-                           'month_heaven', 'month_earth', 'month_human',
-                           'month_stage', 'month_zone', 'month_skill', 'current_session_id']:
-                    if key in st.session_state:
-                        del st.session_state[key]
+                st.session_state.messages = []
+                st.session_state.birthdate = None
+                st.session_state.age = None
+                st.session_state.zodiac = None
+                st.session_state.avatar = None
+                st.session_state.kingdom = None
+                st.session_state.current_session_id = None
                 st.rerun()
         
         # チャット履歴を表示

@@ -1832,58 +1832,11 @@ def main():
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
         
-        # ユーザー入力（クエスト受注中は無効）
+        # ユーザー入力を無効化（クエスト必須）
         if st.session_state.active_quest:
             st.info("💡 クエスト進行中です。行動完了後に報告してください。")
         else:
-            if prompt := st.chat_input("質問や相談を入力してください..."):
-                # ユーザーメッセージを追加
-                st.session_state.messages.append({"role": "user", "content": prompt})
-                with st.chat_message("user"):
-                    st.markdown(prompt)
-                
-                # AIの応答を生成
-                with st.chat_message("assistant"):
-                    with st.spinner("🌌 宇宙と対話中..."):
-                        try:
-                            # モデルを再初期化（最新のsystem_instructionを使用）
-                            model = configure_gemini()
-                            
-                            # 会話履歴を構築
-                            conversation_history = []
-                            for msg in st.session_state.messages[:-1]:
-                                role = "model" if msg["role"] == "assistant" else msg["role"]
-                                conversation_history.append({
-                                    "role": role,
-                                    "parts": [{"text": msg["content"]}]
-                                })
-                            
-                            # 会話履歴がある場合は、それを含める
-                            if conversation_history:
-                                chat = model.start_chat(history=conversation_history)
-                                response = chat.send_message(prompt)
-                            else:
-                                response = model.generate_content(prompt)
-                            
-                            assistant_message = response.text
-                            st.markdown(assistant_message)
-                            
-                            # アシスタントメッセージを追加
-                            st.session_state.messages.append({
-                                "role": "assistant",
-                                "content": assistant_message
-                            })
-                            
-                            # Supabaseに自動保存
-                            save_to_supabase()
-                            
-                        except Exception as e:
-                            error_message = f"エラーが発生しました: {str(e)}"
-                            st.error(error_message)
-                            st.session_state.messages.append({
-                                "role": "assistant",
-                                "content": error_message
-                            })
+            st.info("💡 質問するには、上の「💬 相談する」または「🎯 月の課題」ボタンからクエストを受注してください。")
 
 if __name__ == "__main__":
     main()

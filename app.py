@@ -1959,31 +1959,14 @@ def main():
             
             st.markdown(f"""
             <div class="profile-info">
-                <div class="profile-label">ミッション（{st.session_state.age}歳）</div>
+                <div class="profile-label">今年の攻略（{st.session_state.age}歳）</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">運命 人運 {st.session_state.destiny_human}</div>
                 <div class="profile-value">{st.session_state.mission}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown(f"""
-            <div class="profile-info">
-                <div class="profile-label">装備品（今年の道具）</div>
-                <div class="profile-value" style="font-size: 1rem; color: #f4d16f;">{st.session_state.equipment}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown(f"""
-            <div class="profile-info">
-                <div class="profile-label">フィールド</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">運命 地運 {st.session_state.destiny_earth}</div>
+                <div class="profile-label" style="margin-top: 0.8rem; font-size: 0.9rem;">装備品</div>
+                <div class="profile-value" style="color: #f4d16f;">{st.session_state.equipment}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 地運 {st.session_state.destiny_earth}</div>
                 <div class="profile-value">{st.session_state.field}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown(f"""
-            <div class="profile-info">
-                <div class="profile-label">報酬</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">運命 天運 {st.session_state.destiny_heaven}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 天運 {st.session_state.destiny_heaven}</div>
                 <div class="profile-value">{st.session_state.reward}</div>
             </div>
             """, unsafe_allow_html=True)

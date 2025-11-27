@@ -949,6 +949,16 @@ if 'active_quest' not in st.session_state:
 if 'show_report_form' not in st.session_state:
     st.session_state.show_report_form = False
 
+# 新規: 対話システム用の状態
+if 'pending_quest' not in st.session_state:
+    st.session_state.pending_quest = None
+if 'waiting_for_yes' not in st.session_state:
+    st.session_state.waiting_for_yes = False
+if 'last_user_input' not in st.session_state:
+    st.session_state.last_user_input = ""
+if 'last_ap_cost' not in st.session_state:
+    st.session_state.last_ap_cost = 0
+
 # Phase 2用の状態
 if 'gift_fragments' not in st.session_state:
     st.session_state.gift_fragments = 0
@@ -1092,25 +1102,18 @@ def load_active_quest():
         st.warning(f"⚠️ クエスト読み込みエラー: {e}")
         return None
 
-# クエストを作成する
-def create_quest(quest_type, title, description, advice):
-    """新しいクエストを作成する"""
+# クエストを作成する（YESボタン押下時に呼ばれる）
+def create_quest(quest_type, title, description, advice, initial_cost):
+    """
+    新しいクエストを作成する
+    initial_cost: 相談時に既に消費したAP（1 or 2）
+    この関数呼び出し時はAP消費しない（既に消費済み）
+    """
     if not st.session_state.username:
         return False
     
     try:
         supabase = get_supabase_client()
-        
-        # AP消費量を決定
-        ap_cost = 1 if quest_type == 'consultation' else 2
-        
-        # APが足りるかチェック
-        if st.session_state.ap < ap_cost:
-            st.error(f"⚠️ APが不足しています（必要: {ap_cost} AP、所持: {st.session_state.ap} AP）")
-            return False
-        
-        # APを消費
-        st.session_state.ap -= ap_cost
         
         # 月運情報を取得
         if st.session_state.birthdate:
@@ -1127,7 +1130,9 @@ def create_quest(quest_type, title, description, advice):
         quest_data = {
             'username': st.session_state.username,
             'quest_type': quest_type,
-            'ap_cost': ap_cost,
+            'ap_cost': initial_cost,  # 互換性のため残す
+            'initial_cost': initial_cost,  # 新フィールド: 初期コスト
+            'followup_count': 0,  # 新フィールド: 途中相談回数
             'title': title,
             'description': description,
             'advice': advice,
@@ -1159,6 +1164,75 @@ def create_quest(quest_type, title, description, advice):
         st.error(f"⚠️ クエスト作成エラー: {e}")
         return False
 
+def increment_followup_count(quest_id):
+    """
+    途中相談回数をインクリメント
+    進行中のクエストへの追加相談時に呼ぶ
+    """
+    try:
+        supabase = get_supabase_client()
+        
+        # 現在のfollowup_countを取得
+        quest_response = supabase.table('quests').select('followup_count').eq('id', quest_id).execute()
+        
+        if quest_response.data:
+            current_count = quest_response.data[0].get('followup_count', 0)
+            new_count = current_count + 1
+            
+            # インクリメント
+            supabase.table('quests').update({
+                'followup_count': new_count
+            }).eq('id', quest_id).execute()
+            
+            # セッション状態も更新
+            if st.session_state.active_quest:
+                st.session_state.active_quest['followup_count'] = new_count
+            
+            return True
+        return False
+    except Exception as e:
+        st.error(f"⚠️ 途中相談カウントエラー: {e}")
+        return False
+
+def is_monthly_challenge_request(user_input):
+    """
+    ユーザー入力が月の課題申請かどうかを判定
+    """
+    keywords = [
+        "今月の課題",
+        "月の課題",
+        "月次ミッション",
+        "今月のクエスト",
+        "マンスリークエスト",
+        "今月のミッション"
+    ]
+    return any(keyword in user_input for keyword in keywords)
+
+def extract_quest_title(response_text):
+    """
+    AIの返答からクエストタイトルを抽出
+    【提案クエスト】や『』で囲まれた部分を探す
+    """
+    import re
+    
+    # 『』で囲まれた部分を探す
+    match = re.search(r'『(.+?)』', response_text)
+    if match:
+        return match.group(1)
+    
+    # 【提案クエスト】の次の行を探す
+    lines = response_text.split('\n')
+    for i, line in enumerate(lines):
+        if '【提案クエスト】' in line or '提案クエスト' in line:
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                # 『』を除去
+                next_line = next_line.replace('『', '').replace('』', '')
+                return next_line[:50]  # 最大50文字
+    
+    # 見つからない場合は最初の50文字
+    return response_text[:50].replace('\n', ' ').strip()
+
 # クエストを報告する
 def report_quest(quest_id, report_text, zone_evaluation=None):
     """クエストを報告する"""
@@ -1182,11 +1256,14 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
         now = datetime.now(created_at.tzinfo)
         days_elapsed = (now - created_at).days
         
-        # AP報酬を計算
+        # AP報酬を計算（initial_costベース）
+        # 途中相談のコストは返還対象外
+        initial_cost = quest.get('initial_cost', quest.get('ap_cost', 1))
+        
         if days_elapsed <= 7:
-            ap_reward = quest['ap_cost'] * 2  # 7日以内なら2倍
+            ap_reward = initial_cost * 2  # 7日以内なら2倍
         else:
-            ap_reward = quest['ap_cost']  # 8日以降は等倍
+            ap_reward = initial_cost  # 8日以降は等倍
         
         # KP報酬を計算（月の課題のみ）
         kp_reward = 0
@@ -1989,6 +2066,31 @@ SKILL: {get_month_skill_detail(month_human).get('english', '')}
 5. 最終的にはキングダム（理想の居場所）を築くことが目標
 6. 月のゾーンに合致した行動を取ることでKPが獲得できる
 
+**【重要】ラストパス（Last Pass）原則:**
+あなたは一方的に話して会話を終わらせてはいけません。必ずプレイヤーに「選択」や「合意」を求める形でターンを終了してください。
+
+❌ NG例（一方的な終了）:
+「～なので、頑張ってくださいね！」
+
+✅ OK例（ユーザーにパス）:
+「～という攻略法があります。このクエストを受注しますか？」
+「準備ができたら報告してください。いつでもお待ちしています。」
+「他に相談したいことはありますか？」
+
+**クエスト提案の形式:**
+相談を受けたら、以下の形式で提案してください：
+
+```
+【あなたの状況分析】
+（今月の運勢、アバター特性などを踏まえた分析）
+
+【提案クエスト】
+『具体的なタイトル』
+（実行可能な具体的アクション）
+
+プレイヤー様、この作戦（クエスト）を実行しますか？
+```
+
 美しい日本語で、古の賢者が現代のゲームマスターのように語りかけてください。"""
     return "あなたは運命の導き手「アトリ」です。"
 
@@ -2444,155 +2546,111 @@ def main():
                 st.session_state.show_report_form = False
                 st.rerun()
         
-        # クエスト受注UI（アクティブなクエストがない場合）
-        if not st.session_state.active_quest:
-            st.markdown("### 📜 クエストを受注する")
+        # ========== 新しいチャットベースUI ==========
+        
+        # チャット履歴の表示
+        st.markdown("### 💬 アトリとの対話")
+        
+        # メッセージ履歴を表示
+        chat_container = st.container()
+        with chat_container:
+            for i, message in enumerate(st.session_state.messages):
+                if message["role"] == "user":
+                    # ユーザーメッセージ
+                    ap_cost = message.get('ap_cost', 0)
+                    cost_display = f" **[-{ap_cost} AP]**" if ap_cost > 0 else ""
+                    st.markdown(f"**🧑 あなた**{cost_display}")
+                    st.markdown(f"> {message['content']}")
+                    st.markdown("")
+                else:
+                    # アトリのメッセージ
+                    st.markdown(f"**✨ アトリ**")
+                    st.markdown(message['content'])
+                    st.markdown("")
+        
+        # YESボタンの表示（pending_questがある場合）
+        if st.session_state.get('waiting_for_yes', False) and st.session_state.pending_quest:
+            st.markdown("---")
+            quest = st.session_state.pending_quest
+            
+            st.info(f"""
+📜 **クエスト提案**
+
+{quest.get('title', 'クエスト')}
+
+このクエストを受注しますか？
+            """)
             
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown("""
-                <div class="quest-card">
-                    <div class="quest-title">💬 相談する</div>
-                    <div class="quest-cost">消費: 1 AP</div>
-                    <p style="color: #c0c0c0; font-size: 0.9rem;">日常の悩みや小さな疑問について、アトリに相談できます。</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button("💬 相談する（1AP）", use_container_width=True, disabled=st.session_state.ap < 1):
-                    if st.session_state.ap >= 1:
-                        st.session_state.show_consultation_form = True
+                if st.button("✅ YES（やります）", key="accept_quest", use_container_width=True, type="primary"):
+                    # クエスト作成
+                    if create_quest(
+                        quest_type=quest['type'],
+                        title=quest['title'],
+                        description=quest['description'],
+                        advice=quest['advice'],
+                        initial_cost=quest['initial_cost']
+                    ):
+                        # システムメッセージを追加
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": "🎯 **【QUEST START】**\n\nステータス：進行中\n期限：7日以内\n\n準備ができたら報告してください。行き詰まった場合は、いつでも途中相談できます（-1 AP）。"
+                        })
+                        
+                        st.session_state.pending_quest = None
+                        st.session_state.waiting_for_yes = False
+                        save_to_supabase()
                         st.rerun()
             
             with col2:
-                st.markdown("""
-                <div class="quest-card">
-                    <div class="quest-title">🎯 月の課題</div>
-                    <div class="quest-cost">消費: 2 AP</div>
-                    <p style="color: #c0c0c0; font-size: 0.9rem;">今月のメインクエスト。KP大量獲得のチャンス！</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button("🎯 月の課題（2AP）", use_container_width=True, disabled=st.session_state.ap < 2):
-                    if st.session_state.ap >= 2:
-                        st.session_state.show_challenge_form = True
-                        st.rerun()
-            
-            # 相談フォーム
-            if st.session_state.get('show_consultation_form', False):
-                st.markdown("---")
-                st.markdown("### 💬 相談内容を入力してください")
-                
-                consultation_text = st.text_area(
-                    "相談内容",
-                    placeholder="例: 仕事で新しいプロジェクトを任されましたが、不安です...",
-                    height=150
-                )
-                
-                col1, col2 = st.columns([1, 1])
-                with col1:
-                    if st.button("キャンセル", use_container_width=True):
-                        st.session_state.show_consultation_form = False
-                        st.rerun()
-                
-                with col2:
-                    if st.button("相談する", use_container_width=True, type="primary"):
-                        if consultation_text:
-                            with st.spinner("🌌 宇宙と対話中..."):
-                                try:
-                                    # AIに相談内容を投げる
-                                    response = model.generate_content(consultation_text)
-                                    advice = response.text
-                                    
-                                    # クエストを作成
-                                    if create_quest(
-                                        quest_type='consultation',
-                                        title=consultation_text[:50],
-                                        description=consultation_text,
-                                        advice=advice
-                                    ):
-                                        st.session_state.messages.append({"role": "user", "content": consultation_text})
-                                        st.session_state.messages.append({"role": "assistant", "content": advice})
-                                        st.session_state.show_consultation_form = False
-                                        save_to_supabase()
-                                        st.success("✅ クエストを受注しました！行動後に報告してください。")
-                                        st.rerun()
-                                except Exception as e:
-                                    st.error(f"エラー: {e}")
-                        else:
-                            st.warning("相談内容を入力してください")
-            
-            # 月の課題フォーム
-            if st.session_state.get('show_challenge_form', False):
-                st.markdown("---")
-                st.markdown("### 🎯 今月の課題について相談")
-                
-                challenge_text = st.text_area(
-                    "今月取り組みたいことや目標",
-                    placeholder=f"今月のゾーン「{st.session_state.month_zone}」に沿った行動を考えましょう...",
-                    height=150
-                )
-                
-                col1, col2 = st.columns([1, 1])
-                with col1:
-                    if st.button("キャンセル", key="cancel_challenge", use_container_width=True):
-                        st.session_state.show_challenge_form = False
-                        st.rerun()
-                
-                with col2:
-                    if st.button("課題を受注", use_container_width=True, type="primary"):
-                        if challenge_text:
-                            with st.spinner("🌌 宇宙と対話中..."):
-                                try:
-                                    prompt = f"""今月の課題について相談です。
-
-【相談内容】
-{challenge_text}
-
-【今月の運命】
-- ステージ: {st.session_state.month_stage}
-- ゾーン: {st.session_state.month_zone}
-- スキル: {st.session_state.month_skill}
-
-この運命を活かした具体的な行動プランを提案してください。"""
-                                    
-                                    response = model.generate_content(prompt)
-                                    advice = response.text
-                                    
-                                    # クエストを作成
-                                    if create_quest(
-                                        quest_type='monthly_challenge',
-                                        title=challenge_text[:50],
-                                        description=challenge_text,
-                                        advice=advice
-                                    ):
-                                        st.session_state.messages.append({"role": "user", "content": challenge_text})
-                                        st.session_state.messages.append({"role": "assistant", "content": advice})
-                                        st.session_state.show_challenge_form = False
-                                        save_to_supabase()
-                                        st.success("✅ 月の課題を受注しました！行動後に報告してください。")
-                                        st.rerun()
-                                except Exception as e:
-                                    st.error(f"エラー: {e}")
-                        else:
-                            st.warning("課題内容を入力してください")
+                if st.button("❌ NO（やめておく）", key="decline_quest", use_container_width=True):
+                    # クエストを辞退
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": "承知しました。他に相談したいことがあれば、いつでもお気軽にどうぞ。"
+                    })
+                    
+                    st.session_state.pending_quest = None
+                    st.session_state.waiting_for_yes = False
+                    save_to_supabase()
+                    st.rerun()
         
-        else:
-            # アクティブなクエスト表示
+        # アクティブなクエストがある場合の表示
+        if st.session_state.active_quest and not st.session_state.get('show_report_form', False):
+            st.markdown("---")
             quest = st.session_state.active_quest
             created_at = datetime.fromisoformat(quest['created_at'].replace('Z', '+00:00'))
             days_elapsed = (datetime.now(created_at.tzinfo) - created_at).days
             
-            st.markdown("### 📜 進行中のクエスト")
+            initial_cost = quest.get('initial_cost', quest.get('ap_cost', 1))
+            followup_count = quest.get('followup_count', 0)
+            total_cost = initial_cost + followup_count
+            
+            expected_reward = initial_cost * 2 if days_elapsed <= 7 else initial_cost
+            net_profit = expected_reward - total_cost
             
             status_color = "#4CAF50" if days_elapsed <= 7 else "#FFA500"
             
             st.markdown(f"""
             <div class="quest-card" style="border-color: {status_color};">
-                <div class="quest-title">{quest['title']}</div>
-                <div class="quest-cost">{'💬 相談' if quest['quest_type'] == 'consultation' else '🎯 月の課題'}</div>
-                <p style="color: #c0c0c0; font-size: 0.9rem;">経過日数: {days_elapsed}日 / 7日</p>
-                <p style="color: {'#4CAF50' if days_elapsed <= 7 else '#FFA500'};">
+                <div class="quest-title">📜 進行中のクエスト</div>
+                <div class="quest-cost">{quest['title']}</div>
+                <p style="color: #c0c0c0; font-size: 0.9rem; margin: 0.5rem 0;">
+                    {'💬 相談' if quest['quest_type'] == 'consultation' else '🎯 月の課題'} | 経過: {days_elapsed}日 / 7日
+                </p>
+                <div style="background: rgba(10, 1, 24, 0.6); padding: 0.8rem; border-radius: 8px; margin: 0.5rem 0;">
+                    <div style="color: #c0c0c0; font-size: 0.85rem;">
+                        📊 <strong>AP収支</strong><br>
+                        初期コスト: -{initial_cost} AP<br>
+                        途中相談: {followup_count}回 (-{followup_count} AP)<br>
+                        総コスト: <strong>-{total_cost} AP</strong><br>
+                        期待報酬: <strong>+{expected_reward} AP</strong><br>
+                        実質収支: <strong style="color: {'#4CAF50' if net_profit >= 0 else '#FFA500'};">{'+' if net_profit >= 0 else ''}{net_profit} AP</strong>
+                    </div>
+                </div>
+                <p style="color: {status_color}; margin-top: 0.5rem;">
                     {'⚡ 期限内報告で2倍APボーナス！' if days_elapsed <= 7 else '⚠️ 期限超過（AP報酬は等倍）'}
                 </p>
             </div>
@@ -2601,6 +2659,109 @@ def main():
             if st.button("📝 行動を報告する", use_container_width=True, type="primary"):
                 st.session_state.show_report_form = True
                 st.rerun()
+        
+        # チャット入力欄
+        if not st.session_state.get('waiting_for_yes', False):
+            st.markdown("---")
+            
+            # AP不足の警告
+            required_ap = 2 if st.session_state.active_quest is None else 1
+            if st.session_state.ap < required_ap:
+                st.error(f"⚠️ APが不足しています（必要: {required_ap} AP、所持: {st.session_state.ap} AP）")
+            
+            # チャット入力
+            user_input = st.chat_input(
+                "アトリに相談する..." if not st.session_state.active_quest else "途中相談する（-1 AP）...",
+                disabled=st.session_state.ap < required_ap
+            )
+            
+            if user_input:
+                # AP消費判定
+                if st.session_state.active_quest:
+                    # 途中相談
+                    cost = 1
+                    consultation_type = 'followup'
+                else:
+                    # 新規相談 or 月の課題
+                    if is_monthly_challenge_request(user_input):
+                        cost = 2
+                        consultation_type = 'monthly'
+                    else:
+                        cost = 1
+                        consultation_type = 'consultation'
+                
+                # AP消費
+                st.session_state.ap -= cost
+                st.session_state.last_ap_cost = cost
+                
+                # 途中相談の場合、カウントをインクリメント
+                if consultation_type == 'followup':
+                    increment_followup_count(st.session_state.active_quest['id'])
+                
+                # ユーザーメッセージを追加（AP消費情報付き）
+                st.session_state.messages.append({
+                    "role": "user",
+                    "content": user_input,
+                    "ap_cost": cost
+                })
+                
+                # プレイヤーステータスを保存
+                save_player_status()
+                
+                # AIに送信
+                with st.spinner("🌌 宇宙と対話中..."):
+                    try:
+                        # システムプロンプトを取得
+                        system_prompt = get_system_prompt()
+                        
+                        # 会話履歴を構築
+                        conversation = []
+                        for msg in st.session_state.messages:
+                            conversation.append(f"{'User' if msg['role'] == 'user' else 'Atori'}: {msg['content']}")
+                        
+                        # プロンプト作成
+                        full_prompt = f"""{system_prompt}
+
+【会話履歴】
+{chr(10).join(conversation)}
+
+Atori:"""
+                        
+                        # AI応答を生成
+                        response = model.generate_content(full_prompt)
+                        ai_response = response.text
+                        
+                        # メッセージを追加
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": ai_response
+                        })
+                        
+                        # クエスト提案の検出
+                        if ("受注しますか" in ai_response or "実行しますか" in ai_response) and not st.session_state.active_quest:
+                            # pending_questを作成
+                            quest_type = 'monthly_challenge' if consultation_type == 'monthly' else 'consultation'
+                            quest_title = extract_quest_title(ai_response)
+                            
+                            st.session_state.pending_quest = {
+                                'type': quest_type,
+                                'title': quest_title,
+                                'description': user_input,
+                                'advice': ai_response,
+                                'initial_cost': cost
+                            }
+                            st.session_state.waiting_for_yes = True
+                        
+                        # 保存
+                        save_to_supabase()
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"エラー: {e}")
+                        # エラー時はAP返還
+                        st.session_state.ap += cost
+                        st.session_state.messages.pop()  # 最後のメッセージを削除
+                        save_player_status()
         
         # 報告フォーム
         if st.session_state.get('show_report_form', False) and st.session_state.active_quest:

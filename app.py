@@ -324,19 +324,76 @@ st.markdown("""
 
 # 13の数字の意味定義
 AVATARS = {
+    0: "🌫️ フリーランサー（自由人）",
     1: "⚔️ パイオニア（開拓者）",
-    2: "🤝 メディエーター（調停者）",
-    3: "🎭 クリエイター（創造者）",
-    4: "🏰 ビルダー（建設者）",
-    5: "🌊 エクスプローラー（探検者）",
-    6: "💚 サポーター（支援者）",
-    7: "💡 ビジョナリー（先見者）",
-    8: "👑 リーダー（統率者）",
-    9: "🔥 トランスフォーマー（変革者）",
-    10: "⚙️ アナリスト（分析者）",
-    11: "📡 コミュニケーター（伝達者）",
-    12: "🛡️ ストラテジスト（戦略家）",
-    13: "🌟 ユニバーサリスト（普遍者）"
+    2: "🧭 ナビゲーター（参謀）",
+    3: "🎨 クリエイター（遊び人）",
+    4: "🏗️ アーキテクト（建築家）",
+    5: "🏃 チャレンジャー（冒険家）",
+    6: "💚 ヒーラー（守護者）",
+    7: "🔮 ビジョナリー（予言者）",
+    8: "👑 コマンダー（統率者）",
+    9: "🎓 マスター（達人）",
+    10: "🔄 リノベーター（改革者）",
+    11: "✨ ミラクルメーカー（魔法使い）",
+    12: "🎼 コンダクター（指揮者）"
+}
+
+# アバター詳細データ（全レベル情報）
+# 現在のユーザーはNo.6 Lv.2なので、No.6の詳細を重点的に実装
+AVATAR_DETAILS = {
+    6: {
+        "name": "💚 ヒーラー（守護者）",
+        "traits": "愛・育成・調和",
+        "overview": "仲間を癒やし、育て、チームを守る愛の人。対立するものの間に入って調和を生み出し、温かいコミュニティや美しい関係性を育む、平和の象徴",
+        "npc_mode": "自己犠牲の世話人",
+        "player_mode": "愛と調和の結節点",
+        "paradigm_shift": "自分の世界は外側（他者）との繋がりで作られると知る。人と人を繋ぎ、愛を循環させることで、自らも満たされる",
+        "levels": {
+            0: {
+                "class_name": "Martyr（マーター／殉教者）",
+                "state": "「私が我慢すれば丸く収まる」と思い込み、都合よく扱われている状態。自分の意見を持たず、周りに合わせすぎて自分を見失い（八方美人）、他人の感情のゴミ箱にされて疲弊している",
+                "challenge": "自己喪失の自覚：自分を犠牲にして尽くすことは、美徳ではなく「自分への虐待」であると気づくこと",
+                "action": "NOの意思表示：小さな頼まれごとに対して、あえて断る練習をする。「嫌だ」「できない」と言うことで、自分を守る境界線を引く",
+                "next_step": "「いい人」をやめること。誰からも好かれようとするのをやめ、自分を大切にしてくれない人から離れる勇気を持つ"
+            },
+            1: {
+                "class_name": "Meddlesome Guardian（メドルサム・ガーディアン／お節介な過保護者）",
+                "state": "愛を注ぐ対象を見つけたが、距離感を間違えている状態。「あなたのため」と言いつつ自分の価値を証明しようとしたり、見返りを求めたりして、相手の自立を阻害（過干渉）している",
+                "challenge": "依存からの脱却：「必要とされたい」という自分の欠乏感を埋めるために、相手を利用していないか自問すること",
+                "action": "手放しと見守り：良かれと思って手や口を出したくなる瞬間に、グッとこらえる。相手が失敗する権利を奪わない",
+                "next_step": "矢印を「自分」に向けること。他人の世話を焼く時間があったら、そのエネルギーを全て「自分のケア」に注ぐと決める"
+            },
+            2: {
+                "class_name": "Boundary Guard（バウンダリー・ガード／境界の守り人）",
+                "state": "他人を助ける前に、まず自分を満たすことを覚え始めたリハビリ期間。健全な境界線（バウンダリー）を引き、自分の領域と他人の領域を区別できている",
+                "challenge": "自愛（セルフラブ）：自分が満たされていなければ、他人を本当に幸せにすることはできないと知ること。自分を一番に優先する",
+                "action": "自分へのおもてなし：美しいものを見たり、美味しいものを食べたりして、自分の五感を喜ばせる。自分が心地よいと感じる環境を整える",
+                "next_step": "「シャンパンタワーの法則」を知ること。一番上のグラス（自分）が溢れて初めて、下のグラス（周り）を満たせるのだと理解する"
+            },
+            3: {
+                "class_name": "Harmonizer（ハーモナイザー／調和の架け橋）",
+                "state": "自分が満たされた余剰分のエネルギーで、自然と周囲を助け始めた段階。無理なく人と人を繋いだり、その場にいるだけで空気を和ませたりする「調整役」として機能している",
+                "challenge": "循環させる愛：特定の人への執着ではなく、広く愛を循環させること。見返りを求めない奉仕の喜びを知る",
+                "action": "つなぎ合わせる：困っている人がいれば、助けてくれる人を紹介する。自分一人で抱えず、人の輪を使って解決を図る",
+                "next_step": "愛を「動詞」ではなく「状態」にすること。何かをしてあげるから愛があるのではなく、ただそこに在るだけで愛が伝わる存在を目指す"
+            },
+            4: {
+                "class_name": "Harmony Link（ハーモニー・リンク／愛と調和の結節点）",
+                "state": "【覚醒】自らも満たされ、溢れ出した愛で周囲を繋ぎ、癒やしている状態。彼らがいる場所では争いが消え、皆が安心して本音を話せる温かいコミュニティが育まれる。誰に対しても平等で、中立的な愛を注ぐことができる",
+                "challenge": "愛の拡大：身近な人だけでなく、より広い社会や世界に対して、調和のエネルギーを広げていくこと",
+                "action": "無条件の受容：相手の良い面も悪い面もジャッジせず、丸ごと受け入れる。その受容力が、相手の心を溶かし、本来の輝きを取り戻させる",
+                "next_step": "「私」という器を消すこと。個人的な感情を超え、宇宙の愛が通り抜ける透明なパイプとなる"
+            },
+            999: {
+                "class_name": "The Saint（ザ・セイント／聖者）",
+                "state": "【超越】特定の誰かだけでなく、万物を愛する境地。ただそこに座っているだけで、周囲の怒りや悲しみが浄化され、争いが自然と収まる「歩くパワースポット」。存在そのものが癒やしとなる",
+                "challenge": "慈悲の実践：全ての存在が繋がり合っていることを悟り、痛みを持つものに慈悲を向けること",
+                "action": "聖なる空間の創造：彼らが関わる場所は、聖域（サンクチュアリ）となる。言葉を超えた波動で、世界に平和と調和をもたらす",
+                "next_step": ""
+            }
+        }
+    }
 }
 
 KINGDOMS = {
@@ -829,8 +886,9 @@ def calculate_profile(birthdate_str):
     # 月運を計算
     month_heaven, month_earth, month_human = calculate_month_numbers(birthdate_str)
     
-    # アバター・キングダム
-    avatar = AVATARS[essence_human]
+    # アバター・キングダム（本質人運13はNo.0に対応）
+    avatar_index = 0 if essence_human == 13 else essence_human
+    avatar = AVATARS[avatar_index]
     kingdom = KINGDOMS[essence_earth]
     
     # ミッション・装備品・フィールド・報酬
@@ -1819,6 +1877,38 @@ def get_system_prompt():
         reward_building_role = reward_detail.get('building_role', '')
         reward_building_effect = reward_detail.get('building_effect', '')
         
+        # アバターの詳細情報を取得（本質人運13はNo.0に対応）
+        avatar_index = 0 if essence_human == 13 else essence_human
+        avatar_detail = AVATAR_DETAILS.get(avatar_index, {})
+        if avatar_detail:
+            avatar_traits = avatar_detail.get('traits', '')
+            avatar_overview = avatar_detail.get('overview', '')
+            avatar_paradigm_shift = avatar_detail.get('paradigm_shift', '')
+            # 現在のレベルの詳細
+            current_level = min(level, 4)  # Lv.0-4の範囲
+            current_level_data = avatar_detail.get('levels', {}).get(current_level, {})
+            current_class_name = current_level_data.get('class_name', '')
+            current_state = current_level_data.get('state', '')
+            current_challenge = current_level_data.get('challenge', '')
+            current_action = current_level_data.get('action', '')
+            current_next_step = current_level_data.get('next_step', '')
+            # 次のレベルの情報
+            next_level = min(current_level + 1, 4)
+            next_level_data = avatar_detail.get('levels', {}).get(next_level, {})
+            next_class_name = next_level_data.get('class_name', '')
+            next_state = next_level_data.get('state', '')
+        else:
+            avatar_traits = ''
+            avatar_overview = ''
+            avatar_paradigm_shift = ''
+            current_class_name = ''
+            current_state = ''
+            current_challenge = ''
+            current_action = ''
+            current_next_step = ''
+            next_class_name = ''
+            next_state = ''
+        
         return f"""あなたは『THE PLAYER』のガイド「アトリ」であり、プレイヤーが「現実（リアル）という名の神ゲー」を攻略するための導き手です。
 
 【プレイヤー情報】
@@ -1838,6 +1928,15 @@ def get_system_prompt():
 
 ■ 本質（WHO & GOAL）固定値
 - アバター: {avatar}（本質人運{essence_human}）
+  特性: {avatar_traits}
+  概要: {avatar_overview}
+  【現在のクラス Lv.{current_level}】{current_class_name}
+  状態: {current_state}
+  課題: {current_challenge}
+  行動: {current_action}
+  次のステップ: {current_next_step}
+  【次のクラス Lv.{next_level}】{next_class_name}
+  目標状態: {next_state}
 - キングダム: {kingdom}（本質地運{essence_earth}）
 
 ■ 今年の攻略（13年周期）
@@ -1883,6 +1982,8 @@ def get_system_prompt():
 - 特に装備品（{equipment}）は「今年のレンタル道具」として積極的に活用を提案する
 - フィールド（{field}）では「{field_quest}」というクエストに取り組むよう促す
 - 報酬（{reward}）は「キングダム建築の{reward_building_role}」として活用できると説明する
+- アバターLv.{current_level}の「{current_challenge}」という課題を意識し、「{current_action}」という行動を促す
+- Lv.{next_level}（{next_class_name}）へレベルアップするために「{current_next_step}」をアドバイスする
 - 「〜すべき」ではなく「〜という道がある」と選択肢を提示
 - 過去の会話を記憶し、文脈を理解した上で応答する
 - 月のゾーン（{month_zone}）に合った行動を推奨する
@@ -1890,10 +1991,13 @@ def get_system_prompt():
 **重要な原則:**
 1. プレイヤーは自分の人生の主人公である
 2. 運命は「攻略すべきステージ」である
-3. アバターの特性を活かした戦略を提案する
-4. 今年のミッションと、フィールドでのクエストを意識する
-5. 装備品を使ってフィールドのクエストをクリアすることで報酬（{reward}）を得る
-6. 報酬はキングダム建築の素材（{reward_building_role}）として使える
+3. アバターの特性（{avatar_traits}）を活かした戦略を提案する
+4. 現在のクラス（{current_class_name}）の課題をクリアすることで次のレベルへ進める
+5. 今年のミッションと、フィールドでのクエストを意識する
+6. 装備品を使ってフィールドのクエストをクリアすることで報酬（{reward}）を得る
+7. 報酬はキングダム建築の素材（{reward_building_role}）として使える
+8. 最終的にはキングダム（理想の居場所）を築くことが目標
+9. 月のゾーンに合致した行動を取ることでKPが獲得できる
 7. 最終的にはキングダム（理想の居場所）を築くことが目標
 8. 月のゾーンに合致した行動を取ることでKPが獲得できる
 

@@ -372,7 +372,9 @@ MISSIONS = {
 }
 
 # 装備品（年間装備）- 運命 人運に対応
+# 人運 1-12 → No.1-12, 人運 13 → No.0
 EQUIPMENTS = {
+    0: "🔄 Reset Button（リセット・ボタン）",
     1: "⛏️ First Pickaxe（最初のツルハシ）",
     2: "🔭 High-Spec Binoculars（高性能双眼鏡）",
     3: "🖍️ Magic Crayon（魔法のクレヨン）",
@@ -384,11 +386,16 @@ EQUIPMENTS = {
     9: "✂️ Sorting Shears（選別のハサミ）",
     10: "🧨 Dynamite（変革のダイナマイト）",
     11: "🪄 Miracle Rod（奇跡の杖）",
-    12: "🏃 Relay Baton（継承のバトン）",
-    13: "🔄 Reset Button（リセット・ボタン）"
+    12: "🏃 Relay Baton（継承のバトン）"
 }
 
 EQUIPMENT_DETAILS = {
+    0: {
+        "name": "🔄 Reset Button（リセット・ボタン）",
+        "function": "強制終了と初期化",
+        "usage": "複雑になりすぎた人間関係や、動かなくなったプロジェクトを「なかったこと」にする道具",
+        "strategy": "修理しようとせず、迷わずボタンを押すこと。思考を停止させ、「ゼロに戻す」機能を使う"
+    },
     1: {
         "name": "⛏️ First Pickaxe（最初のツルハシ）",
         "function": "一点突破と開拓",
@@ -460,12 +467,6 @@ EQUIPMENT_DETAILS = {
         "function": "接続と委託",
         "usage": "自分が走るのをやめ、次の走者に想いと記録を託すための道具",
         "strategy": "握りしめ続けず、適切な相手に「渡す」こと。自分がゴールするのではなく、繋ぐことを目的にする"
-    },
-    13: {
-        "name": "🔄 Reset Button（リセット・ボタン）",
-        "function": "強制終了と初期化",
-        "usage": "複雑になりすぎた人間関係や、動かなくなったプロジェクトを「なかったこと」にする道具",
-        "strategy": "修理しようとせず、迷わずボタンを押すこと。思考を停止させ、「ゼロに戻す」機能を使う"
     }
 }
 
@@ -659,7 +660,9 @@ def calculate_profile(birthdate_str):
     
     # ミッション・装備品・フィールド・報酬
     mission = MISSIONS[destiny_human]
-    equipment = EQUIPMENTS[destiny_human]  # 装備品を追加
+    # 装備品: 人運13はNo.0（Reset Button）に対応
+    equipment_index = 0 if destiny_human == 13 else destiny_human
+    equipment = EQUIPMENTS[equipment_index]
     field = FIELDS[destiny_earth]
     reward = REWARDS[destiny_heaven]
     
@@ -1616,8 +1619,9 @@ def get_system_prompt():
         month_zone = getattr(st.session_state, 'month_zone', '未設定')
         month_skill = getattr(st.session_state, 'month_skill', '未設定')
         
-        # 装備品の詳細情報を取得
-        equipment_detail = EQUIPMENT_DETAILS.get(destiny_human, {})
+        # 装備品の詳細情報を取得（人運13はNo.0に対応）
+        equipment_index = 0 if destiny_human == 13 else destiny_human
+        equipment_detail = EQUIPMENT_DETAILS.get(equipment_index, {})
         equipment_function = equipment_detail.get('function', '')
         equipment_strategy = equipment_detail.get('strategy', '')
         
@@ -2308,4 +2312,3 @@ if __name__ == "__main__":
         © 2024 THE PLAYER - Powered by Google Gemini AI
     </footer>
     """, unsafe_allow_html=True)
-

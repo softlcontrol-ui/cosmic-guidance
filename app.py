@@ -288,6 +288,31 @@ st.markdown("""
     .stProgress > div > div {
         background: linear-gradient(135deg, #d4af37 0%, #f4d16f 100%);
     }
+    
+    /* チャットスクロール領域 */
+    .chat-wrapper {
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 1rem 0;
+    }
+    
+    .chat-wrapper::-webkit-scrollbar {
+        width: 10px;
+    }
+    
+    .chat-wrapper::-webkit-scrollbar-track {
+        background: #1e1e1e;
+        border-radius: 5px;
+    }
+    
+    .chat-wrapper::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 5px;
+    }
+    
+    .chat-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #777;
+    }
 </style>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2136,13 +2161,31 @@ def main():
                     else:
                         st.warning("報告内容を入力してください")
         
-        # チャット履歴を表示
+        # チャット履歴を表示（スクロール可能）
         st.markdown("---")
         st.markdown("### 💬 会話履歴")
         
+        # スクロール領域
+        st.markdown('<div id="chat-container" class="chat-wrapper">', unsafe_allow_html=True)
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
+        # 一番下にアンカーを置く
+        st.markdown('<div id="chat-end"></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # ===== 自動スクロール（ChatGPTと同じ動き） =====
+        scroll_js = """
+        <script>
+        const chatContainer = document.getElementById('chat-container');
+        const chatEnd = document.getElementById('chat-end');
+        // 常に最下部へスクロール
+        setTimeout(function() {
+            chatEnd.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+        </script>
+        """
+        st.markdown(scroll_js, unsafe_allow_html=True)
         
         # ユーザー入力を無効化（クエスト必須）
         if st.session_state.active_quest:

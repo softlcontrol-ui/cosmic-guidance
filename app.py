@@ -1234,6 +1234,67 @@ def extract_quest_title(response_text):
     return response_text[:50].replace('\n', ' ').strip()
 
 # クエストを報告する
+def evaluate_zone_compliance_with_ai(quest_advice, report_text, zone_info):
+    """
+    AIがZONE適合度を判定する
+    
+    Args:
+        quest_advice: クエスト時のアドバイス
+        report_text: ユーザーの報告内容
+        zone_info: 今月のZONE情報（制約と攻略法）
+    
+    Returns:
+        評価（'Excellent', 'Great', 'Good', 'Poor'）
+    """
+    try:
+        # Gemini APIを使用してZONE適合度を判定
+        model = configure_gemini()
+        
+        evaluation_prompt = f"""あなたは『THE PLAYER』の評価AIです。
+
+【ZONE情報】
+{zone_info}
+
+【クエスト時のアドバイス】
+{quest_advice}
+
+【プレイヤーの報告】
+{report_text}
+
+上記の報告内容が、ZONEの制約に適っているかを評価してください。
+
+評価基準:
+- **Excellent**: ZONE制約を完璧に理解し、推奨された行動を実行している
+- **Great**: ZONE制約をよく理解し、概ね推奨行動を実行している
+- **Good**: ZONE制約を理解し、部分的に推奨行動を実行している
+- **Poor**: ZONE制約を無視した行動、または報告が不十分
+
+**重要**: 以下の形式でのみ回答してください（他の文章は一切含めないこと）：
+Excellent
+または
+Great
+または
+Good
+または
+Poor
+"""
+        
+        response = model.generate_content(evaluation_prompt)
+        evaluation = response.text.strip()
+        
+        # 評価が正しい形式か確認
+        if evaluation in ['Excellent', 'Great', 'Good', 'Poor']:
+            return evaluation
+        else:
+            # AIが正しく返答しなかった場合はGoodをデフォルトに
+            return 'Good'
+            
+    except Exception as e:
+        print(f"AI評価エラー: {e}")
+        # エラー時はGoodをデフォルトに
+        return 'Good'
+
+
 def report_quest(quest_id, report_text, zone_evaluation=None):
     """クエストを報告する"""
     if not st.session_state.username:
@@ -1267,13 +1328,42 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
         
         # KP報酬を計算（月の課題のみ）
         kp_reward = 0
-        if quest['quest_type'] == 'monthly_challenge' and zone_evaluation:
-            if zone_evaluation == 'Excellent':
-                kp_reward = 30
-            elif zone_evaluation == 'Great':
-                kp_reward = 20
-            elif zone_evaluation == 'Good':
-                kp_reward = 10
+        ai_evaluation = None
+        
+        if quest['quest_type'] == 'monthly_challenge':
+            # 月運情報を取得
+            if st.session_state.birthdate:
+                profile = calculate_profile(st.session_state.birthdate)
+                zone_info = f"""
+今月のZONE: {profile.get('month_zone', 'Unknown')}
+制約: {profile.get('month_zone_constraint', '')}
+攻略法: {profile.get('month_skill', 'Unknown')}
+"""
+                
+                # AIにZONE適合度を判定させる
+                with st.spinner("🤖 AIがZONE適合度を評価中..."):
+                    ai_evaluation = evaluate_zone_compliance_with_ai(
+                        quest_advice=quest.get('advice', ''),
+                        report_text=report_text,
+                        zone_info=zone_info
+                    )
+                
+                # AI評価に基づいてKPを付与
+                if ai_evaluation == 'Excellent':
+                    kp_reward = 150  # Excellentは大幅増量
+                elif ai_evaluation == 'Great':
+                    kp_reward = 100
+                elif ai_evaluation == 'Good':
+                    kp_reward = 50
+                else:  # Poor
+                    kp_reward = 10  # 最低限の報酬
+            
+            # ユーザーの自己評価も記録（参考用）
+            final_evaluation = ai_evaluation or zone_evaluation
+        else:
+            # 通常の相談の場合は基本報酬のみ
+            kp_reward = 100
+            final_evaluation = None
         
         # EXP報酬（固定）
         exp_reward = 50
@@ -1287,7 +1377,9 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
             'ap_reward': ap_reward,
             'kp_reward': kp_reward,
             'exp_reward': exp_reward,
-            'zone_evaluation': zone_evaluation,
+            'zone_evaluation': final_evaluation if quest['quest_type'] == 'monthly_challenge' else None,
+            'user_evaluation': zone_evaluation,  # ユーザー自己評価
+            'ai_evaluation': ai_evaluation,  # AI評価
             'reported_at': datetime.now().isoformat()
         }
         
@@ -1318,10 +1410,10 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
         # アクティブクエストをクリア
         st.session_state.active_quest = None
         
-        return True, ap_reward, kp_reward, exp_reward, days_elapsed
+        return True, ap_reward, kp_reward, exp_reward, days_elapsed, ai_evaluation
     except Exception as e:
         st.error(f"⚠️ 報告エラー: {e}")
-        return False, 0, 0, 0, 0
+        return False, 0, 0, 0, 0, None
 
 # レベルアップチェック
 def check_level_up():
@@ -2777,10 +2869,22 @@ Atori:"""
             zone_eval = None
             if st.session_state.active_quest['quest_type'] == 'monthly_challenge':
                 st.markdown(f"**今月のゾーン**: {st.session_state.month_zone}")
+                st.info("""
+💡 **ZONE適合度について**
+
+AIがあなたの報告内容を分析し、今月のZONE制約に適った行動かどうかを自動評価します。
+
+- 🌟 **Excellent** (150 KP): ZONE制約を完璧に理解・実行
+- ✨ **Great** (100 KP): ZONE制約をよく理解・実行
+- 👍 **Good** (50 KP): ZONE制約を部分的に実行
+- 💧 **Poor** (10 KP): ZONE制約を無視した行動
+
+※自己評価は参考として記録されますが、KP付与はAI評価に基づきます
+                """)
                 zone_eval = st.selectbox(
-                    "ゾーンへの適合度（自己評価）",
+                    "自己評価（参考）",
                     options=['Good', 'Great', 'Excellent'],
-                    help="Good: +10 KP, Great: +20 KP, Excellent: +30 KP"
+                    help="あなた自身の評価を記録します（AI評価とは別）"
                 )
             
             col1, col2 = st.columns([1, 1])
@@ -2798,11 +2902,22 @@ Atori:"""
                             zone_evaluation=zone_eval
                         )
                         
-                        if result:
-                            success, ap_reward, kp_reward, exp_reward, days = result
+                        if result and result[0]:  # success
+                            success, ap_reward, kp_reward, exp_reward, days, ai_eval = result
+                            
+                            # AI評価メッセージ
+                            eval_message = ""
+                            if ai_eval:
+                                eval_emoji = {
+                                    'Excellent': '🌟',
+                                    'Great': '✨',
+                                    'Good': '👍',
+                                    'Poor': '💧'
+                                }
+                                eval_message = f"\n\n**AI評価**: {eval_emoji.get(ai_eval, '')} {ai_eval}"
                             
                             st.success(f"""
-✅ 報告完了！
+✅ 報告完了！{eval_message}
 
 **獲得した報酬:**
 - ⚡ AP: +{ap_reward}

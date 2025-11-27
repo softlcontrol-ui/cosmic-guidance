@@ -844,13 +844,8 @@ AVATAR_LEVELS = {
 }
 
 # キングダムランク定義
-KINGDOM_RANKS = {
-    0: {"name": "Rank 0: 荒地", "kp_required": 0, "gifts_required": 0},
-    1: {"name": "Rank 1: 集落", "kp_required": 100, "gifts_required": 1},
-    2: {"name": "Rank 2: 街", "kp_required": 500, "gifts_required": 2},
-    3: {"name": "Rank 3: 都市", "kp_required": 1500, "gifts_required": 3},
-    4: {"name": "Rank 4: 王国", "kp_required": 5000, "gifts_required": 5}
-}
+# Phase 3: KINGDOM_RANKSは廃止（KPベースの自動ランクアップに移行）
+# 代わりにKINGDOM_RANK_THRESHOLDSを使用
 
 def calculate_essence_numbers(birthdate_str):
     """本質数を計算（固定値）"""
@@ -1952,126 +1947,222 @@ def load_gifts():
 
 # ギフトカケラを追加
 def add_gift_fragment():
-    """月の課題クリアでカケラを追加"""
+    """
+    月の課題クリア時にギフトのカケラを+1
+    5カケラで1ギフト完成 → gifts テーブルに記録
+    """
     if not st.session_state.username:
         return False
     
     try:
         supabase = get_supabase_client()
-        current_year = datetime.now().year
         
         # カケラを+1
         st.session_state.gift_fragments += 1
         
         # 5カケラで1ギフト完成
         if st.session_state.gift_fragments >= 5:
-            st.session_state.completed_gifts += 1
+            # カケラをリセット
             st.session_state.gift_fragments = 0
+            
+            # 完成ギフト数を+1
+            st.session_state.completed_gifts += 1
+            
+            # 今年の天運ギフトを取得
+            current_age = st.session_state.age
+            current_year = datetime.now().year
+            destiny_heaven = st.session_state.destiny_heaven
+            
+            # ギフト番号を計算（0-12）
+            gift_num = (destiny_heaven - 1) % 13
+            gift_detail = YEARLY_GIFT[gift_num]
+            
+            # gifts テーブルに記録
+            gift_record = {
+                'username': st.session_state.username,
+                'gift_number': gift_num,
+                'gift_name': gift_detail['name'],
+                'gift_japanese': gift_detail['japanese'],
+                'acquired_age': current_age,
+                'acquired_year': current_year,
+                'source': 'fragment_synthesis',
+                'used_for_rankup': False
+            }
+            
+            supabase.table('gifts').insert(gift_record).execute()
             
             # ギフト完成通知
             st.success(f"""
 🎁 **天運ギフトが完成しました！**
 
-カケラ5個を集めて、今年の天運ギフトが完成しました。
-キングダムのランクアップに使用できます。
+**{gift_detail['name']}（{gift_detail['japanese']}）**
 
-完成したギフト: {st.session_state.completed_gifts}個
+{gift_detail['overview']}
+
+**効果**:
+""" + "\n".join([f"- {effect}" for effect in gift_detail['effects']]) + f"""
+
+**建材としての役割**:
+{gift_detail['building_material']}
+
+完成したギフト総数: {st.session_state.completed_gifts}個
             """)
-        
-        # Supabaseに保存
-        gift_data = {
-            'username': st.session_state.username,
-            'gift_year': current_year,
-            'gift_name': f'{current_year}年の天運ギフト',
-            'fragment_count': st.session_state.gift_fragments,
-            'is_complete': st.session_state.gift_fragments == 0 and st.session_state.completed_gifts > 0
-        }
-        
-        # 既存レコードをチェック
-        existing = supabase.table('gifts').select('username').eq(
-            'username', st.session_state.username
-        ).eq('gift_year', current_year).execute()
-        
-        if existing.data:
-            # 既存レコードがある場合は更新
-            supabase.table('gifts').update(gift_data).eq(
-                'username', st.session_state.username
-            ).eq('gift_year', current_year).execute()
+            
+            return True, 'gift_completed'
         else:
-            # 既存レコードがない場合は挿入
-            supabase.table('gifts').insert(gift_data).execute()
-        
-        return True
+            # カケラ追加の通知
+            st.info(f"""
+✨ **ギフトのカケラを獲得しました！**
+
+現在のカケラ: {st.session_state.gift_fragments} / 5
+
+あと{5 - st.session_state.gift_fragments}個で天運ギフトが完成します。
+            """)
+            
+            return True, 'fragment_added'
+            
     except Exception as e:
-        st.warning(f"⚠️ ギフト追加エラー: {e}")
-        return False
+        st.warning(f"⚠️ ギフト処理エラー: {e}")
+        return False, 'error'
 
-# キングダムランクアップ可能かチェック
-def can_rankup_kingdom():
-    """キングダムをランクアップできるかチェック"""
-    current_rank = st.session_state.kingdom_rank
-    
-    # すでに最高ランク
-    if current_rank >= 4:
-        return False, "すでに最高ランク（Rank 4: 王国）です"
-    
-    next_rank = current_rank + 1
-    required_kp = KINGDOM_RANKS[next_rank]['kp_required']
-    required_gifts = KINGDOM_RANKS[next_rank]['gifts_required']
-    
-    # KP不足
-    if st.session_state.kp < required_kp:
-        return False, f"KPが不足しています（必要: {required_kp} KP、所持: {st.session_state.kp} KP）"
-    
-    # ギフト不足
-    if st.session_state.completed_gifts < required_gifts:
-        return False, f"天運ギフトが不足しています（必要: {required_gifts}個、所持: {st.session_state.completed_gifts}個）"
-    
-    return True, f"ランクアップ可能！（消費: {required_kp} KP + ギフト{required_gifts}個）"
 
-# キングダムランクアップ実行
-def rankup_kingdom():
-    """キングダムをランクアップ"""
+def get_user_gifts(include_used=False):
+    """
+    ユーザーが獲得したギフト一覧を取得
+    
+    Args:
+        include_used: ランクアップに使用済みのギフトも含めるか
+    
+    Returns:
+        list: ギフトのリスト
+    """
+    if not st.session_state.username:
+        return []
+    
+    try:
+        supabase = get_supabase_client()
+        
+        query = supabase.table('gifts').select('*').eq('username', st.session_state.username)
+        
+        if not include_used:
+            query = query.eq('used_for_rankup', False)
+        
+        result = query.order('acquired_at', desc=True).execute()
+        
+        return result.data if result.data else []
+    except Exception as e:
+        st.error(f"⚠️ ギフト取得エラー: {e}")
+        return []
+
+
+def get_available_gifts_count():
+    """ランクアップに使用可能なギフトの数を取得"""
+    gifts = get_user_gifts(include_used=False)
+    return len(gifts)
+
+
+def use_gift_for_rankup(gift_id):
+    """
+    ギフトをランクアップに使用する
+    
+    Args:
+        gift_id: 使用するギフトのID
+    
+    Returns:
+        bool: 成功したかどうか
+    """
     if not st.session_state.username:
         return False
     
-    # チェック
-    can_rankup, message = can_rankup_kingdom()
-    if not can_rankup:
-        st.error(message)
-        return False
-    
     try:
-        next_rank = st.session_state.kingdom_rank + 1
-        required_kp = KINGDOM_RANKS[next_rank]['kp_required']
-        required_gifts = KINGDOM_RANKS[next_rank]['gifts_required']
+        supabase = get_supabase_client()
         
-        # KPとギフトを消費
-        st.session_state.kp -= required_kp
-        st.session_state.completed_gifts -= required_gifts
+        # ギフトを「使用済み」にマーク
+        supabase.table('gifts').update({
+            'used_for_rankup': True,
+            'used_at': datetime.now().isoformat()
+        }).eq('id', gift_id).execute()
         
-        # ランクアップ
-        st.session_state.kingdom_rank = next_rank
-        
-        # 保存
-        save_player_status()
-        
-        st.success(f"""
-🏰 **キングダムがランクアップしました！**
-
-{KINGDOM_RANKS[next_rank-1]['name']} → {KINGDOM_RANKS[next_rank]['name']}
-
-消費:
-- {required_kp} KP
-- 天運ギフト {required_gifts}個
-
-理想の拠点が、また一歩近づきました！
-        """)
+        # 完成ギフト数を減らす
+        st.session_state.completed_gifts -= 1
         
         return True
     except Exception as e:
-        st.error(f"ランクアップエラー: {e}")
+        st.error(f"⚠️ ギフト使用エラー: {e}")
         return False
+
+# ============================================================
+# 旧ランクアップシステム（Phase 3では廃止）
+# Phase 1-2のKINGDOM_RANKSベースのランクアップシステム
+# Phase 3ではKPベースの自動ランクアップに移行
+# ============================================================
+
+# # キングダムランクアップ可能かチェック
+# def can_rankup_kingdom():
+#     """キングダムをランクアップできるかチェック"""
+#     current_rank = st.session_state.kingdom_rank
+#     
+#     # すでに最高ランク
+#     if current_rank >= 4:
+#         return False, "すでに最高ランク（Rank 4: 王国）です"
+#     
+#     next_rank = current_rank + 1
+#     required_kp = KINGDOM_RANKS[next_rank]['kp_required']
+#     required_gifts = KINGDOM_RANKS[next_rank]['gifts_required']
+#     
+#     # KP不足
+#     if st.session_state.kp < required_kp:
+#         return False, f"KPが不足しています（必要: {required_kp} KP、所持: {st.session_state.kp} KP）"
+#     
+#     # ギフト不足
+#     if st.session_state.completed_gifts < required_gifts:
+#         return False, f"天運ギフトが不足しています（必要: {required_gifts}個、所持: {st.session_state.completed_gifts}個）"
+#     
+#     return True, f"ランクアップ可能！（消費: {required_kp} KP + ギフト{required_gifts}個）"
+
+# # キングダムランクアップ実行
+# def rankup_kingdom():
+#     """キングダムをランクアップ"""
+#     if not st.session_state.username:
+#         return False
+#     
+#     # チェック
+#     can_rankup, message = can_rankup_kingdom()
+#     if not can_rankup:
+#         st.error(message)
+#         return False
+#     
+#     try:
+#         next_rank = st.session_state.kingdom_rank + 1
+#         required_kp = KINGDOM_RANKS[next_rank]['kp_required']
+#         required_gifts = KINGDOM_RANKS[next_rank]['gifts_required']
+#         
+#         # KPとギフトを消費
+#         st.session_state.kp -= required_kp
+#         st.session_state.completed_gifts -= required_gifts
+#         
+#         # ランクアップ
+#         st.session_state.kingdom_rank = next_rank
+#         
+#         # 保存
+#         save_player_status()
+#         
+#         st.success(f"""
+# 🏰 **キングダムがランクアップしました！**
+# 
+# {KINGDOM_RANKS[next_rank-1]['name']} → {KINGDOM_RANKS[next_rank]['name']}
+# 
+# 消費:
+# - {required_kp} KP
+# - 天運ギフト {required_gifts}個
+# 
+# 理想の拠点が、また一歩近づきました！
+#         """)
+#         
+#         return True
+#     except Exception as e:
+#         st.error(f"ランクアップエラー: {e}")
+#         return False
 
 
 # 新規登録
@@ -2946,6 +3037,46 @@ def main():
                 
                 アトリに相談して、具体的なアドバイスをもらいましょう！
                 """)
+            
+            # Phase 3: 獲得したギフト一覧
+            with st.expander("🎁 獲得したギフト履歴", expanded=False):
+                gifts = get_user_gifts(include_used=True)
+                
+                if not gifts:
+                    st.info("まだギフトを獲得していません。月の課題を5回クリアすると、天運ギフトが完成します！")
+                else:
+                    st.markdown(f"**獲得したギフト総数**: {len(gifts)}個")
+                    st.markdown("---")
+                    
+                    for gift in gifts:
+                        gift_detail = YEARLY_GIFT[gift['gift_number']]
+                        status_icon = "✅" if gift['used_for_rankup'] else "🎁"
+                        status_text = "使用済み" if gift['used_for_rankup'] else "保管中"
+                        
+                        st.markdown(f"""
+### {status_icon} {gift['gift_japanese']}
+
+**英語名**: {gift['gift_name']}  
+**獲得年**: {gift['acquired_year']}年（{gift['acquired_age']}歳）  
+**ステータス**: {status_text}
+
+**概要**:  
+{gift_detail['overview']}
+
+**効果**:
+""")
+                        for effect in gift_detail['effects']:
+                            st.markdown(f"- {effect}")
+                        
+                        st.markdown(f"""
+**建材としての役割**:  
+{gift_detail['building_material']}
+                        """)
+                        
+                        if gift['used_for_rankup']:
+                            st.caption(f"🏰 {gift['used_at'][:10]} にランクアップで使用されました")
+                        
+                        st.markdown("---")
             
             
             if st.button("🚪 ログアウト", use_container_width=True):

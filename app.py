@@ -1248,15 +1248,31 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
 
 # レベルアップチェック
 def check_level_up():
-    """EXPに応じてアバターレベルをチェック・更新"""
+    """
+    EXPに応じてアバターレベルをチェック・更新
+    レベルアップ時にAPを全回復（成長ボーナス）
+    「器が広がり、活力が満ちる」
+    """
     current_level = st.session_state.avatar_level
     
     for level in range(4, -1, -1):
         if st.session_state.exp >= AVATAR_LEVELS[level]['exp_required']:
             if level > current_level:
+                # レベルアップ！
                 st.session_state.avatar_level = level
                 st.session_state.max_ap = AVATAR_LEVELS[level]['max_ap']
-                st.success(f"🎉 レベルアップ！ {AVATAR_LEVELS[level]['name']}")
+                
+                # AP全回復（成長ボーナス）
+                st.session_state.ap = st.session_state.max_ap
+                
+                st.success(f"""
+🎉 **レベルアップ！**
+
+{AVATAR_LEVELS[level]['name']}
+
+Max AP: {st.session_state.max_ap}
+**AP全回復！** ⚡ {st.session_state.ap}/{st.session_state.max_ap}
+                """)
             break
 
 
@@ -1295,9 +1311,40 @@ def check_kingdom_rank_up():
 
 # ==================== Phase 2: 新機能 ====================
 
-# 自然回復チェック
+# アイテム使用: 覚醒ドリンク
+def use_energy_drink():
+    """
+    覚醒ドリンクを使用してAP全回復
+    「資本の力（課金）」
+    コスト: 100 COIN
+    効果: AP即座に全回復
+    """
+    if st.session_state.coin < 100:
+        return False, "COINが不足しています（必要: 100 COIN）"
+    
+    if st.session_state.ap >= st.session_state.max_ap:
+        return False, "APは既に最大です"
+    
+    # COIN消費
+    st.session_state.coin -= 100
+    
+    # AP全回復
+    old_ap = st.session_state.ap
+    st.session_state.ap = st.session_state.max_ap
+    recovered = st.session_state.ap - old_ap
+    
+    # 保存
+    save_player_status()
+    
+    return True, f"⚡ 覚醒ドリンクを使用！ AP +{recovered} 回復（{st.session_state.ap}/{st.session_state.max_ap}）"
+
+# 自然回復チェック（ログインボーナス）
 def check_daily_login():
-    """毎日のログイン時にAPを自然回復"""
+    """
+    毎日のログイン時にAPを回復（セーフティネット）
+    「睡眠による意志力の回復」
+    日付が変わった後の初回ログインで +1 AP 固定
+    """
     if not st.session_state.username:
         return
     
@@ -1310,10 +1357,12 @@ def check_daily_login():
     
     # 初回ログインまたは日付が変わっている場合
     if last_login is None or last_login < today:
-        # APが0の場合のみ+1回復
-        if st.session_state.ap == 0:
-            st.session_state.ap = 1
-            st.success("☀️ 新しい日が始まりました！APが1回復しました。")
+        # ログインボーナス: +1 AP（Max APを超えない）
+        old_ap = st.session_state.ap
+        st.session_state.ap = min(st.session_state.ap + 1, st.session_state.max_ap)
+        
+        if st.session_state.ap > old_ap:
+            st.success(f"☀️ 新しい日が始まりました！ログインボーナス +1 AP（現在: {st.session_state.ap}/{st.session_state.max_ap}）")
         
         # 最終ログイン日を更新
         st.session_state.last_login_date = today.isoformat()
@@ -2164,6 +2213,18 @@ def main():
                 </div>
             </div>
             """, unsafe_allow_html=True)
+            
+            # 覚醒ドリンク（AP回復アイテム）
+            if st.session_state.ap < st.session_state.max_ap:
+                st.markdown("---")
+                if st.button("⚡ 覚醒ドリンク（100 COIN）", use_container_width=True, type="secondary"):
+                    success, message = use_energy_drink()
+                    if success:
+                        st.success(message)
+                        st.rerun()
+                    else:
+                        st.error(message)
+                st.caption("💡 APを即座に全回復します")
             
             st.markdown(f"""
             <div class="profile-info">

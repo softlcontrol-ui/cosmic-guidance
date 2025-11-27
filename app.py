@@ -371,6 +371,105 @@ MISSIONS = {
     13: "🌈 インテグレーション：統合せよ"
 }
 
+# 装備品（年間装備）- 運命 人運に対応
+EQUIPMENTS = {
+    1: "⛏️ First Pickaxe（最初のツルハシ）",
+    2: "🔭 High-Spec Binoculars（高性能双眼鏡）",
+    3: "🖍️ Magic Crayon（魔法のクレヨン）",
+    4: "📏 Spirit Level（水平器と定規）",
+    5: "📣 Megaphone（メガホン）",
+    6: "🚿 Watering Can（恵みのジョウロ）",
+    7: "🧭 Vision Compass（ビジョン・コンパス）",
+    8: "🏄 Surfboard（サーフボード）",
+    9: "✂️ Sorting Shears（選別のハサミ）",
+    10: "🧨 Dynamite（変革のダイナマイト）",
+    11: "🪄 Miracle Rod（奇跡の杖）",
+    12: "🏃 Relay Baton（継承のバトン）",
+    13: "🔄 Reset Button（リセット・ボタン）"
+}
+
+EQUIPMENT_DETAILS = {
+    1: {
+        "name": "⛏️ First Pickaxe（最初のツルハシ）",
+        "function": "一点突破と開拓",
+        "usage": "誰もいない荒野や、硬い壁に「最初の風穴」を開けるための道具",
+        "strategy": "誰かと一緒に持とうとせず、一人で振り下ろすこと。「私がやる」という意志の力を込めて使う"
+    },
+    2: {
+        "name": "🔭 High-Spec Binoculars（高性能双眼鏡）",
+        "function": "遠見と分析",
+        "usage": "遠くの未来や、相手の心の中を拡大して見るための道具",
+        "strategy": "足は動かさず、レンズを覗くことに集中すること。焦って走り出すと、この道具の性能は発揮されない"
+    },
+    3: {
+        "name": "🖍️ Magic Crayon（魔法のクレヨン）",
+        "function": "具現化と彩り",
+        "usage": "空中に描いたものが実体化するような、創造の道具",
+        "strategy": "上手く描こうとせず、落書きのように自由に使うこと。「面白そう」という衝動で手を動かす"
+    },
+    4: {
+        "name": "📏 Spirit Level（水平器と定規）",
+        "function": "計測と安定",
+        "usage": "積み上げたものが崩れないよう、正確に測り、固定するための道具",
+        "strategy": "感覚で進めず、メモリ（数字や実績）に合わせてきっちりと使うこと。確実性を最優先する"
+    },
+    5: {
+        "name": "📣 Megaphone（メガホン）",
+        "function": "拡散と主張",
+        "usage": "自分の声を何倍にも大きくして、遠くまで届ける道具",
+        "strategy": "空気を読まず、大声で叫ぶこと（発信する）。「私はここにいる！」と主張するために使う"
+    },
+    6: {
+        "name": "🚿 Watering Can（恵みのジョウロ）",
+        "function": "育成と調和",
+        "usage": "乾いた場所に水をやり、種を育てる道具",
+        "strategy": "自分のためではなく、他者（花）のために使うこと。見返りを求めず、ただ注ぐだけでいい"
+    },
+    7: {
+        "name": "🧭 Vision Compass（ビジョン・コンパス）",
+        "function": "指針と理想",
+        "usage": "現実の地図には載っていない「理想郷」の方角を指し示す特殊な羅針盤",
+        "strategy": "足元の悪路は見ず、針が指す「遠くの未来」だけを見つめて進むこと"
+    },
+    8: {
+        "name": "🏄 Surfboard（サーフボード）",
+        "function": "波乗りと加速",
+        "usage": "自力で泳ぐのではなく、押し寄せる「時代の波」や「他人の力」に乗って、高速で移動するための道具",
+        "strategy": "波に逆らわず、バランスを取ることに集中すること。来た波（オファー）には、とりあえず乗ってみる"
+    },
+    9: {
+        "name": "✂️ Sorting Shears（選別のハサミ）",
+        "function": "剪定と完了",
+        "usage": "伸びすぎた枝葉や、不要になった過去を切り落とす道具",
+        "strategy": "情に流されず、スパッと切ること。「もったいない」と思わず、身軽になるために使う"
+    },
+    10: {
+        "name": "🧨 Dynamite（変革のダイナマイト）",
+        "function": "破壊と刷新",
+        "usage": "古くなって使えなくなった建物やシステムを、一撃で破壊する道具",
+        "strategy": "爆発を恐れないこと。過去の成功体験ごと吹き飛ばす覚悟で、点火スイッチを押す"
+    },
+    11: {
+        "name": "🪄 Miracle Rod（奇跡の杖）",
+        "function": "直感と魔法",
+        "usage": "一振りすれば、壁に扉が現れたり、ワープしたりする魔法の杖",
+        "strategy": "使い方のマニュアルはない。「今だ！」と閃いた瞬間に振る。頭で考えずに使うこと"
+    },
+    12: {
+        "name": "🏃 Relay Baton（継承のバトン）",
+        "function": "接続と委託",
+        "usage": "自分が走るのをやめ、次の走者に想いと記録を託すための道具",
+        "strategy": "握りしめ続けず、適切な相手に「渡す」こと。自分がゴールするのではなく、繋ぐことを目的にする"
+    },
+    13: {
+        "name": "🔄 Reset Button（リセット・ボタン）",
+        "function": "強制終了と初期化",
+        "usage": "複雑になりすぎた人間関係や、動かなくなったプロジェクトを「なかったこと」にする道具",
+        "strategy": "修理しようとせず、迷わずボタンを押すこと。思考を停止させ、「ゼロに戻す」機能を使う"
+    }
+}
+
+
 FIELDS = {
     1: "🚀 スタートライン（始まりの地）",
     2: "⚖️ バランスポイント（均衡の場）",
@@ -558,8 +657,9 @@ def calculate_profile(birthdate_str):
     avatar = AVATARS[essence_human]
     kingdom = KINGDOMS[essence_earth]
     
-    # ミッション・フィールド・報酬
+    # ミッション・装備品・フィールド・報酬
     mission = MISSIONS[destiny_human]
+    equipment = EQUIPMENTS[destiny_human]  # 装備品を追加
     field = FIELDS[destiny_earth]
     reward = REWARDS[destiny_heaven]
     
@@ -579,6 +679,7 @@ def calculate_profile(birthdate_str):
         'destiny_earth': destiny_earth,
         'destiny_heaven': destiny_heaven,
         'mission': mission,
+        'equipment': equipment,  # 装備品を追加
         'field': field,
         'reward': reward,
         'month_heaven': month_heaven,
@@ -1414,6 +1515,7 @@ def load_session(session_id):
             st.session_state.destiny_earth = profile['destiny_earth']
             st.session_state.destiny_heaven = profile['destiny_heaven']
             st.session_state.mission = profile['mission']
+            st.session_state.equipment = profile['equipment']  # 装備品を追加
             st.session_state.field = profile['field']
             st.session_state.reward = profile['reward']
             st.session_state.month_heaven = profile['month_heaven']
@@ -1504,6 +1606,7 @@ def get_system_prompt():
         destiny_earth = getattr(st.session_state, 'destiny_earth', '?')
         destiny_heaven = getattr(st.session_state, 'destiny_heaven', '?')
         mission = getattr(st.session_state, 'mission', '未設定')
+        equipment = getattr(st.session_state, 'equipment', '未設定')  # 装備品を追加
         field = getattr(st.session_state, 'field', '未設定')
         reward = getattr(st.session_state, 'reward', '未設定')
         month_heaven = getattr(st.session_state, 'month_heaven', '?')
@@ -1512,6 +1615,11 @@ def get_system_prompt():
         month_stage = getattr(st.session_state, 'month_stage', '未設定')
         month_zone = getattr(st.session_state, 'month_zone', '未設定')
         month_skill = getattr(st.session_state, 'month_skill', '未設定')
+        
+        # 装備品の詳細情報を取得
+        equipment_detail = EQUIPMENT_DETAILS.get(destiny_human, {})
+        equipment_function = equipment_detail.get('function', '')
+        equipment_strategy = equipment_detail.get('strategy', '')
         
         return f"""あなたは『THE PLAYER』のガイド「アトリ」であり、プレイヤーが「現実（リアル）という名の神ゲー」を攻略するための導き手です。
 
@@ -1536,6 +1644,9 @@ def get_system_prompt():
 
 ■ 今年の攻略（13年周期）
 - ミッション: {mission}（運命人運{destiny_human}）
+- 装備品: {equipment}（運命人運{destiny_human}）
+  機能: {equipment_function}
+  攻略法: {equipment_strategy}
 - フィールド: {field}（運命地運{destiny_earth}）
 - 報酬: {reward}（運命天運{destiny_heaven}）
 
@@ -1549,10 +1660,11 @@ def get_system_prompt():
 
 **人生攻略の公式:**
 1. WHO（アバター）: 自分らしいやり方で
-2. WHAT（ミッション）: 今、与えられた役割を遂行すると
-3. WHERE（フィールド）: 活躍すべきステージが現れる
-4. GET（報酬）: そこで得た成果を持ち帰り
-5. GOAL（キングダム）: 理想の居場所を拡張・建設していく
+2. WHAT（ミッション）: 今、与えられた役割を遂行し
+3. HOW（装備品）: 今年支給された道具を使って
+4. WHERE（フィールド）: 活躍すべきステージで行動すると
+5. GET（報酬）: そこで得た成果を持ち帰り
+6. GOAL（キングダム）: 理想の居場所を拡張・建設していく
 
 **語り口:**
 - 神秘的で詩的でありながら、実践的で具体的なアドバイスを提供する
@@ -1562,7 +1674,8 @@ def get_system_prompt():
 
 **応答スタイル:**
 - 簡潔な質問には簡潔に、深い相談には深く応答
-- アバター、ミッション、フィールド、月間スキルを活かした具体的なアドバイス
+- アバター、ミッション、装備品、フィールド、月間スキルを活かした具体的なアドバイス
+- 特に装備品（{equipment}）は「今年のレンタル道具」として積極的に活用を提案する
 - 「〜すべき」ではなく「〜という道がある」と選択肢を提示
 - 過去の会話を記憶し、文脈を理解した上で応答する
 - 月のゾーン（{month_zone}）に合った行動を推奨する
@@ -1675,6 +1788,7 @@ def main():
             st.session_state.destiny_earth = profile['destiny_earth']
             st.session_state.destiny_heaven = profile['destiny_heaven']
             st.session_state.mission = profile['mission']
+            st.session_state.equipment = profile['equipment']  # 装備品を追加
             st.session_state.field = profile['field']
             st.session_state.reward = profile['reward']
             st.session_state.month_heaven = profile['month_heaven']
@@ -1715,7 +1829,8 @@ def main():
 【今年の攻略（{profile['age']}歳）】13年周期
 
  運命 人運 {profile['destiny_human']}
- └ ミッション: {profile['mission']}
+ ├ ミッション: {profile['mission']}
+ └ 装備品: {profile['equipment']}
 
  運命 地運 {profile['destiny_earth']}
  └ フィールド: {profile['field']}
@@ -1741,9 +1856,10 @@ def main():
 【人生攻略の公式】
 1. WHO（アバター）: {profile['avatar']}の特性で
 2. WHAT（ミッション）: {profile['mission']}
-3. WHERE（フィールド）: {profile['field']}で活躍し
-4. GET（報酬）: {profile['reward']}を獲得
-5. GOAL（キングダム）: {profile['kingdom']}を築く
+3. HOW（装備品）: {profile['equipment']}を使って
+4. WHERE（フィールド）: {profile['field']}で活躍し
+5. GET（報酬）: {profile['reward']}を獲得
+6. GOAL（キングダム）: {profile['kingdom']}を築く
 
 私はあなたの運命の導き手「アトリ」です。
 この現実（リアル）という名の壮大なゲームを、共に攻略していきましょう。
@@ -1842,6 +1958,7 @@ def main():
                 <div class="profile-label">今年の攻略（{st.session_state.age}歳）</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">運命 人運 {st.session_state.destiny_human}</div>
                 <div class="profile-value">{st.session_state.mission}</div>
+                <div class="profile-value" style="font-size: 0.9rem; color: #f4d16f; margin-top: 0.5rem;">⚔️ {st.session_state.equipment}</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 地運 {st.session_state.destiny_earth}</div>
                 <div class="profile-value">{st.session_state.field}</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 天運 {st.session_state.destiny_heaven}</div>

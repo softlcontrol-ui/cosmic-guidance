@@ -835,12 +835,68 @@ def get_month_skill_detail(skill_num):
     return details.get(skill_num, {})
 
 # アバターレベル定義
+# ==================== Phase 4: アバターレベルシステム（EXPベース）====================
+
+# レベル定義（より戦略的な成長曲線）
 AVATAR_LEVELS = {
-    0: {"name": "Lv.0 NPC（眠れる村人）", "max_ap": 10, "exp_required": 0},
-    1: {"name": "Lv.1 TRIAL（試練の挑戦者）", "max_ap": 15, "exp_required": 100},
-    2: {"name": "Lv.2 NOVICE（見習い）", "max_ap": 20, "exp_required": 300},
-    3: {"name": "Lv.3 ADEPT（熟練者）", "max_ap": 30, "exp_required": 600},
-    4: {"name": "Lv.4 PLAYER（覚醒した主人公）", "max_ap": 50, "exp_required": 1000}
+    0: {
+        "name": "Lv.0 NPC（眠れる村人）",
+        "english": "NPC - Sleeping Villager",
+        "max_ap": 10,
+        "exp_required": 0,
+        "coin_reward": 0,
+        "description": "まだ目覚めていない、普通の人。現実をゲームとして認識していない状態。"
+    },
+    1: {
+        "name": "Lv.1 TRIAL（試練の挑戦者）",
+        "english": "TRIAL - Challenger",
+        "max_ap": 15,
+        "exp_required": 100,
+        "coin_reward": 50,
+        "description": "運命の羅針盤を手に入れ、人生をゲームとして攻略し始めた。最初の一歩を踏み出した状態。"
+    },
+    2: {
+        "name": "Lv.2 NOVICE（見習い）",
+        "english": "NOVICE - Apprentice",
+        "max_ap": 20,
+        "exp_required": 300,
+        "coin_reward": 100,
+        "description": "クエストをこなし、経験を積んでいる。攻略法が少しずつ見えてきた状態。"
+    },
+    3: {
+        "name": "Lv.3 ADEPT（熟練者）",
+        "english": "ADEPT - Expert",
+        "max_ap": 30,
+        "exp_required": 700,
+        "coin_reward": 150,
+        "description": "戦略的に人生を攻略できるようになった。ZONE制約やスキルを使いこなせる状態。"
+    },
+    4: {
+        "name": "Lv.4 MASTER（達人）",
+        "english": "MASTER - Virtuoso",
+        "max_ap": 40,
+        "exp_required": 1500,
+        "coin_reward": 200,
+        "description": "人生の攻略法を体得し、自在に運命を操れるようになった。真のプレイヤーの一歩手前。"
+    },
+    5: {
+        "name": "Lv.5 PLAYER（覚醒した主人公）",
+        "english": "PLAYER - Awakened Protagonist",
+        "max_ap": 50,
+        "exp_required": 3000,
+        "coin_reward": 300,
+        "description": "完全に目覚めた状態。現実（リアル）という名の神ゲーを、最高難易度で攻略できる真の主人公。"
+    }
+}
+
+# レベルアップ時の絵文字
+LEVEL_UP_EMOJIS = {
+    0: "😴",
+    1: "⚡",
+    2: "🌱",
+    3: "⚔️",
+    4: "🔥",
+    5: "👑"
 }
 
 # キングダムランク定義
@@ -1737,13 +1793,16 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
 # レベルアップチェック
 def check_level_up():
     """
-    EXPに応じてアバターレベルをチェック・更新
-    レベルアップ時にAPを全回復（成長ボーナス）
-    「器が広がり、活力が満ちる」
+    Phase 4: EXPに応じてアバターレベルをチェック・更新
+    レベルアップ時の報酬:
+    - AP全回復（成長ボーナス）
+    - COIN報酬
+    - Max AP増加
     """
     current_level = st.session_state.avatar_level
     
-    for level in range(4, -1, -1):
+    # レベル5から下に向かってチェック（最高レベルから判定）
+    for level in range(5, -1, -1):
         if st.session_state.exp >= AVATAR_LEVELS[level]['exp_required']:
             if level > current_level:
                 # レベルアップ！
@@ -1751,15 +1810,33 @@ def check_level_up():
                 st.session_state.max_ap = AVATAR_LEVELS[level]['max_ap']
                 
                 # AP全回復（成長ボーナス）
+                old_ap = st.session_state.ap
                 st.session_state.ap = st.session_state.max_ap
                 
+                # COIN報酬
+                coin_reward = AVATAR_LEVELS[level]['coin_reward']
+                if coin_reward > 0:
+                    st.session_state.coin += coin_reward
+                
+                # レベルアップ通知
+                emoji = LEVEL_UP_EMOJIS.get(level, "⭐")
+                st.balloons()
                 st.success(f"""
-🎉 **レベルアップ！**
+{emoji} **レベルアップ！**
 
-{AVATAR_LEVELS[level]['name']}
+**{AVATAR_LEVELS[level]['name']}**
+{AVATAR_LEVELS[level]['english']}
 
-Max AP: {st.session_state.max_ap}
-**AP全回復！** ⚡ {st.session_state.ap}/{st.session_state.max_ap}
+{AVATAR_LEVELS[level]['description']}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**🎁 レベルアップ報酬**
+- ⚡ AP全回復: {old_ap} → {st.session_state.max_ap}
+- 📦 Max AP増加: {AVATAR_LEVELS[current_level]['max_ap']} → {st.session_state.max_ap}
+- 🪙 COIN: +{coin_reward}
+
+現在の総COIN: {st.session_state.coin} COIN
                 """)
             break
 
@@ -2842,6 +2919,41 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             
+            # Phase 4: レベル進捗バー
+            if st.session_state.avatar_level < 5:
+                current_level = st.session_state.avatar_level
+                next_level = current_level + 1
+                current_exp = st.session_state.exp
+                current_threshold = AVATAR_LEVELS[current_level]['exp_required']
+                next_threshold = AVATAR_LEVELS[next_level]['exp_required']
+                
+                exp_in_level = current_exp - current_threshold
+                exp_needed = next_threshold - current_threshold
+                exp_percentage = min(100, (exp_in_level / exp_needed) * 100) if exp_needed > 0 else 0
+                
+                st.markdown(f"""
+                <div class="profile-info">
+                    <div class="profile-label">次のレベルまで</div>
+                    <div style="background: rgba(10, 1, 24, 0.6); border-radius: 10px; overflow: hidden; margin: 0.5rem 0;">
+                        <div style="background: linear-gradient(90deg, #4a90e2, #63b3ed); height: 20px; width: {exp_percentage}%; transition: width 0.3s;"></div>
+                    </div>
+                    <div style="color: #c0c0c0; font-size: 0.85rem; text-align: center;">
+                        {current_exp} / {next_threshold} EXP ({exp_percentage:.1f}%)
+                    </div>
+                    <div style="color: #63b3ed; font-size: 0.8rem; text-align: center; margin-top: 0.3rem;">
+                        残り {next_threshold - current_exp} EXP で Lv.{next_level} へ！
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div class="profile-info">
+                    <div style="color: #4a90e2; font-size: 0.9rem; text-align: center; font-weight: 600;">
+                        👑 最高レベル到達！
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
             # キングダムランク表示（強化版）
             essence_earth = calculate_essence_earth(st.session_state.birthdate) if st.session_state.birthdate else 1
             kingdom_info = get_kingdom_info(essence_earth, st.session_state.kingdom_rank)
@@ -2936,6 +3048,57 @@ def main():
                 <div class="profile-value">{st.session_state.month_skill}</div>
             </div>
             """, unsafe_allow_html=True)
+            
+            # Phase 4: アバターレベル詳細
+            with st.expander("⭐ アバターレベル詳細", expanded=False):
+                st.markdown("### 全レベル一覧")
+                
+                current_level = st.session_state.avatar_level
+                
+                for level in range(6):
+                    is_current = (level == current_level)
+                    is_unlocked = (st.session_state.exp >= AVATAR_LEVELS[level]['exp_required'])
+                    
+                    emoji = LEVEL_UP_EMOJIS.get(level, "⭐")
+                    
+                    if is_current:
+                        status = "✅ 現在のレベル"
+                        border_color = "#4a90e2"
+                    elif is_unlocked:
+                        status = "🔓 到達済み"
+                        border_color = "#4CAF50"
+                    else:
+                        status = "🔒 未到達"
+                        border_color = "#666666"
+                    
+                    st.markdown(f"""
+<div style="border: 2px solid {border_color}; border-radius: 10px; padding: 1rem; margin: 1rem 0; background: rgba(255,255,255,0.05);">
+
+### {emoji} {AVATAR_LEVELS[level]['name']}
+**{AVATAR_LEVELS[level]['english']}**
+
+{status}
+
+**必要EXP**: {AVATAR_LEVELS[level]['exp_required']} EXP  
+**Max AP**: {AVATAR_LEVELS[level]['max_ap']}  
+**COIN報酬**: {AVATAR_LEVELS[level]['coin_reward']} COIN
+
+**説明**:  
+{AVATAR_LEVELS[level]['description']}
+
+</div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("---")
+                st.markdown("### 💡 EXPの獲得方法")
+                st.markdown("""
+- **途中相談**: 10 EXP
+- **相談完了**: 20 EXP
+- **月の課題クリア**: 30-50 EXP（評価により変動）
+- **クエスト完了**: 日数に応じて変動
+
+レベルを上げることで、Max APが増加し、より多くのクエストに挑戦できるようになります。
+                """)
             
             # 年間クエスト詳細表示（Phase 2: 新機能）
             with st.expander("🎯 年間クエスト詳細", expanded=False):

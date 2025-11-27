@@ -404,55 +404,111 @@ REWARDS = {
 }
 
 MONTH_STAGES = {
-    1: "🌅 ドーン（夜明け）",
-    2: "🌱 スプラウト（芽吹き）",
-    3: "🌸 ブロッサム（開花）",
-    4: "☀️ ピーク（頂点）",
-    5: "🌾 ハーベスト（収穫）",
-    6: "🌙 トワイライト（黄昏）",
-    7: "🌑 ダークネス（闇）",
-    8: "🌠 リニューアル（再生）",
-    9: "🔄 サイクル（循環）",
-    10: "⚡ アクション（行動）",
-    11: "🎭 エクスプレッション（表現）",
-    12: "🧘 メディテーション（瞑想）",
-    13: "🌈 インテグレーション（統合）",
-    14: "✨ トランセンデンス（超越）"
+    0: "✨ クリアリング（浄化）",
+    1: "🌅 スタートアップ（起動）",
+    2: "🌱 セレクション（選択）",
+    3: "🌸 イマジネーション（想像）",
+    4: "☀️ ファウンデーション（定着）",
+    5: "🌾 クロッシング（交流）",
+    6: "🌙 メンテナンス（調和）",
+    7: "🌑 アチーブメント（達成）",
+    8: "🌠 ハードモード（試練）",
+    9: "🔄 ハーベスト（収穫）",
+    10: "⚡ マーケット（還元）",
+    11: "🎭 ラビリンス（迷宮）",
+    12: "🧘 コントリビューション（奉仕）"
 }
 
 MONTH_ZONES = {
-    1: "🎯 フォーカスゾーン（集中）",
-    2: "🤝 コネクションゾーン（繋がり）",
-    3: "🎨 クリエイティブゾーン（創造）",
-    4: "🏗️ ビルディングゾーン（構築）",
-    5: "🌊 フローゾーン（流れ）",
-    6: "💚 ヒーリングゾーン（癒やし）",
-    7: "🔮 ビジョンゾーン（洞察）",
-    8: "⚡ パワーゾーン（力）",
-    9: "🔥 トランジションゾーン（移行）",
-    10: "📊 アナリシスゾーン（分析）",
-    11: "📣 コミュニケーションゾーン（伝達）",
-    12: "🎯 ストラテジーゾーン（戦略）",
-    13: "✨ ハーモニーゾーン（調和）",
-    14: "🌈 トランセンデンスゾーン（超越）"
+    0: "🌈 ベイカントロット（更地）",
+    1: "🎯 スカベンジャーエリア（収集）",
+    2: "🤝 オブザベーションデッキ（観測）",
+    3: "🎨 ウィンドトンネル（風の通り道）",
+    4: "🏗️ フォートレス（要塞）",
+    5: "🌊 チェンジャブルウェザー（変わりやすい天気）",
+    6: "💚 コミュニティホール（集会所）",
+    7: "🔮 ミラージュタワー（蜃気楼の塔）",
+    8: "⚡ ハイスピードストリーム（高速ベルトコンベア）",
+    9: "🔥 チェックアウトカウンター（精算カウンター）",
+    10: "📊 ワープゾーン（ワープゾーン）",
+    11: "📣 マジックフィールド（魔法陣）",
+    12: "🎯 コントロールタワー（管制塔）"
 }
 
 MONTH_SKILLS = {
-    1: "⚔️ アタック（攻撃）",
-    2: "🛡️ ディフェンス（防御）",
-    3: "🎪 プレイ（遊び）",
-    4: "🔨 ビルド（構築）",
-    5: "🧭 エクスプロア（探索）",
-    6: "💞 ケア（世話）",
-    7: "🔮 ビジョン（洞察）",
-    8: "⚡ プッシュ（推進）",
-    9: "🌀 トランスフォーム（変容）",
-    10: "📐 アナライズ（分析）",
-    11: "📣 コミュニケート（伝達）",
-    12: "🎯 ストラテジャイズ（戦略化）",
-    13: "🌈 インテグレート（統合）",
-    14: "✨ トランセンド（超越）"
+    0: "✨ ゼロセンス（思考停止）",
+    1: "⚔️ ファーストストライク（先制攻撃）",
+    2: "🛡️ ディープスキャン（深層分析）",
+    3: "🎪 ジョイスパーク（娯楽化）",
+    4: "🔨 グラウンディング（足場固め）",
+    5: "🧭 ブレイブシャウト（自己主張）",
+    6: "💞 ヒーリングリンク（調和）",
+    7: "🔮 イーグルアイ（俯瞰視点）",
+    8: "⚡ パワーサーフィン（便乗）",
+    9: "🌀 エッセンシャルカット（断捨離）",
+    10: "📐 パラダイムシフト（変革）",
+    11: "📣 ミラクルフラッシュ（直感行動）",
+    12: "🎯 バトンパス（委譲）"
 }
+
+# ==================== マンスリー・ストラテジー 詳細データ ====================
+
+def get_month_stage_detail(stage_num):
+    """月天運（ステージ）の詳細情報を取得 - 13段階（0-12）"""
+    details = {
+        0: {"english": "CLEARING", "theme": "浄化", "description": "全てのログを整理し、不要なデータを削除する年末処理のようなステージ。新しいことを始めるのではなく、「終わらせる」「手放す」ことに専念し、メモリを空けることで、次なるStage 1がスムーズに起動します。"},
+        1: {"english": "STARTUP", "theme": "起動", "description": "新しい意志が芽吹く、始まりのステージ。ここでは「壮大な計画」よりも「とりあえずログインする（小さな一歩を踏み出す）」ことが推奨されます。動き出しにボーナスがつきます。"},
+        2: {"english": "SELECTION", "theme": "選択", "description": "外野の声が遮断された、静かな個室ステージ。アクションを起こすよりも、マップを広げて「どちらのルートに進むか」をじっくり選ぶことに適しています。判断力が強化されるエリアです。"},
+        3: {"english": "IMAGINATION", "theme": "想像", "description": "自由な発想が許される実験室のようなステージ。「こうなったら面白い」という妄想やシミュレーションが、現実化しやすい補正がかかります。外向きの意識を持つことで道が開けます。"},
+        4: {"english": "FOUNDATION", "theme": "定着", "description": "安全地帯で、足場を固めるステージ。生活リズム、仕事のルーティン、人間関係の土台など、地味ですが重要な「足元」を整備することで、防御力が大幅にアップします。"},
+        5: {"english": "CROSSING", "theme": "交流", "description": "多くのプレイヤーが行き交う、賑やかな広場ステージ。ソロプレイよりも、他者との会話や情報交換（チャット）が攻略の鍵となります。新しい出会いイベントが発生しやすい期間です。"},
+        6: {"english": "MAINTENANCE", "theme": "調和", "description": "心身のバランスを整えるための休息ステージ。無理に先へ進もうとするとペナルティ（疲労）が発生しやすいため、装備の手入れや体調管理に専念するのが吉です。"},
+        7: {"english": "ACHIEVEMENT", "theme": "達成", "description": "前半戦のゴール地点となるステージ。これまでの努力が「形」となって現れやすく、達成感を味わえます。ここで一度セーブし、現状を確認することで、後半戦へのフラグが立ちます。"},
+        8: {"english": "HARD MODE", "theme": "試練", "description": "通常より難易度が高い、ボス戦のようなステージ。試練や壁が現れますが、それは「限界突破」のためのイベントです。逃げずに挑むことで、大量の経験値とレベルアップが約束されています。"},
+        9: {"english": "HARVEST", "theme": "収穫", "description": "ここまでのプレイに対する報酬（ドロップアイテム）を受け取るステージ。成果が目に見える形で手に入ります。遠慮せず「受け取る」コマンドを選択し、感謝することで運気がさらに上がります。"},
+        10: {"english": "MARKET", "theme": "還元", "description": "手に入れたアイテムや情報を、他者と分かち合う市場のようなステージ。独り占めせず「共有」や「貢献」を行うことで、さらに大きな循環（トレード）が生まれ、次の展開へと繋がります。"},
+        11: {"english": "LABYRINTH", "theme": "迷宮", "description": "霧がかかり、視界が悪くなる迷宮ステージ。マップ（論理）が役に立たず、不安になりますが、ここは「直感」のステータスが試される場所。迷いを受け入れ、心の声に従うことで隠し通路が見つかります。"},
+        12: {"english": "CONTRIBUTION", "theme": "奉仕", "description": "自分のクエストではなく、他者のクエストを手伝うためのステージ。「人のために時間を使う」ことで、徳（カルマ）が浄化され、来期に向けた幸運の種まきが完了します。"}
+    }
+    return details.get(stage_num, {})
+
+def get_month_zone_detail(zone_num):
+    """月地運（ゾーン）の詳細情報を取得 - 13段階（0-12）"""
+    details = {
+        0: {"english": "VACANT LOT", "constraint": "新規建築・禁止", "hint": "焦って新しい予定を入れないこと。空白を作れば作るほど、次のサイクルのためのエネルギーがチャージされます。"},
+        1: {"english": "SCAVENGER AREA", "constraint": "持ち込み禁止・現地調達", "hint": "遠くを見すぎないこと。半径5メートル以内にある「使えるもの」「協力してくれそうな人」を見逃さないでください。"},
+        2: {"english": "OBSERVATION DECK", "constraint": "移動速度ダウン・視界良好", "hint": "「動けない」と焦る必要はありません。「今は作戦タイムだ」と割り切り、情報収集とシミュレーションに時間を使いましょう。"},
+        3: {"english": "WIND TUNNEL", "constraint": "操縦不能・乱気流", "hint": "ハンドルを握りしめず、風任せにドリフトすること。「面白そうな方へ流される」のが、このゾーンの正解ルートです。"},
+        4: {"english": "FORTRESS", "constraint": "防御力アップ・変化無効", "hint": "派手なアクションは控え、地味なルーティンワークや基礎練習に徹すること。ここで固めた足場は、絶対に崩れません。"},
+        5: {"english": "CHANGEABLE WEATHER", "constraint": "環境激変・適応力テスト", "hint": "計画通りにいかなくても怒らないこと。「そう来たか！」と面白がり、即座にプランBへ切り替える反射神経を磨きましょう。"},
+        6: {"english": "COMMUNITY HALL", "constraint": "ソロプレイ禁止・協力必須", "hint": "「自分でやった方が早い」と思っても、あえて誰かに声をかけましょう。おしゃべりや交流の中に、攻略のヒントが隠されています。"},
+        7: {"english": "MIRAGE TOWER", "constraint": "重力軽減・現実感希薄", "hint": "目の前の雑務は最低限にして、意識を「未来」や「理想」に飛ばしましょう。妄想することが、ここでは立派な攻略行動です。"},
+        8: {"english": "HIGH SPEED STREAM", "constraint": "強制移動・途中下車不可", "hint": "抵抗して逆走しようとしないこと。「なるようになれ」と腹を括り、この高速移動が連れて行ってくれる景色を楽しみましょう。"},
+        9: {"english": "CHECKOUT COUNTER", "constraint": "持ち出し制限・整理整頓", "hint": "「広げる」ことより「畳む」ことを意識しましょう。やり残したことを完了させ、身軽になることでクリアとなります。"},
+        10: {"english": "WARP ZONE", "constraint": "現在地不明・システム更新", "hint": "「前のやり方」を捨てること。何が起きても「これは新しいステージへの転送演出だ」と捉え、変化を受け入れてください。"},
+        11: {"english": "MAGIC FIELD", "constraint": "論理無効・直感優位", "hint": "「なぜ？」と考えないこと。ピンときた方向に道があります。偶然やラッキーも、ここでは実力のうちです。"},
+        12: {"english": "CONTROL TOWER", "constraint": "直接介入禁止・遠隔操作", "hint": "自分が動けないもどかしさを手放し、「全体を見る目」を持ちましょう。適切な人にパスを出すことが、最速のクリア方法です。"}
+    }
+    return details.get(zone_num, {})
+
+def get_month_skill_detail(skill_num):
+    """月人運（スキル）の詳細情報を取得 - 13段階（0-12）"""
+    details = {
+        0: {"english": "ZERO SENSE", "effect": "思考停止・感覚覚醒", "action": "迷ったら目を閉じ、深呼吸して「嫌だ」と感じるものを拒絶する"},
+        1: {"english": "FIRST STRIKE", "effect": "先制攻撃・単独行動", "action": "相談せずに一人で始める"},
+        2: {"english": "DEEP SCAN", "effect": "深層分析・未来予測", "action": "情報を集めて比較検討する"},
+        3: {"english": "JOY SPARK", "effect": "娯楽化・アイデア創造", "action": "面白そう！と口にする"},
+        4: {"english": "GROUNDING", "effect": "足場固め・現実化", "action": "計画表を作る"},
+        5: {"english": "BRAVE SHOUT", "effect": "自己主張・拡散", "action": "遠慮せず意見を言う"},
+        6: {"english": "HEALING LINK", "effect": "調和・結合", "action": "誰かに優しくする"},
+        7: {"english": "EAGLE EYE", "effect": "俯瞰視点・理想設定", "action": "10年後を想像する"},
+        8: {"english": "POWER SURFING", "effect": "便乗・他力活用", "action": "流れに身を任せる"},
+        9: {"english": "ESSENTIAL CUT", "effect": "断捨離・完結", "action": "やらないことを決める"},
+        10: {"english": "PARADIGM SHIFT", "effect": "強制変革・脱皮", "action": "成功パターンを捨てる"},
+        11: {"english": "MIRACLE FLASH", "effect": "直感行動・壁抜け", "action": "0.1秒で決める"},
+        12: {"english": "BATON PASS", "effect": "委譲・継承", "action": "誰かを主役にする"}
+    }
+    return details.get(skill_num, {})
 
 # アバターレベル定義
 AVATAR_LEVELS = {
@@ -512,20 +568,21 @@ def calculate_destiny_numbers(birthdate_str, age):
     return destiny_human, destiny_earth, destiny_heaven
 
 def calculate_month_numbers(birthdate_str):
-    """月運を計算（28日周期）"""
+    """月運を計算（28日周期）- 13段階（0-12）"""
     birth = datetime.strptime(birthdate_str, "%Y-%m-%d")
     today = datetime.now()
     
     # 誕生日からの経過日数
     days_since_birth = (today - birth).days
     
-    # 28日周期での位置（1-28）
-    cycle_position = (days_since_birth % 28) + 1
+    # 28日周期での位置（0-27）
+    cycle_position = days_since_birth % 28
     
-    # 14段階に変換（28日を14段階で分ける）
-    month_heaven = ((cycle_position - 1) // 2) + 1  # 1-14
-    month_earth = (((cycle_position + 9) - 1) // 2) % 14 + 1  # 1-14
-    month_human = (((cycle_position + 18) - 1) // 2) % 14 + 1  # 1-14
+    # 13段階に変換（28日を13段階で分ける）
+    # 28 ÷ 13 ≈ 2.15日 per stage
+    month_heaven = int((cycle_position * 13) / 28)  # 0-12
+    month_earth = int(((cycle_position + 9) * 13) / 28) % 13  # 0-12
+    month_human = int(((cycle_position + 18) * 13) / 28) % 13  # 0-12
     
     return month_heaven, month_earth, month_human
 
@@ -1840,6 +1897,18 @@ def get_system_prompt():
 - ゾーン: {month_zone}（月地運{month_earth}）
 - スキル: {month_skill}（月人運{month_human}）
 
+【今月の詳細戦略】
+STAGE: {get_month_stage_detail(month_heaven).get('english', '')} - {get_month_stage_detail(month_heaven).get('theme', '')}
+→ {get_month_stage_detail(month_heaven).get('description', '')}
+
+ZONE: {get_month_zone_detail(month_earth).get('english', '')}
+制約: {get_month_zone_detail(month_earth).get('constraint', '')}
+ヒント: {get_month_zone_detail(month_earth).get('hint', '')}
+
+SKILL: {get_month_skill_detail(month_human).get('english', '')}
+効果: {get_month_skill_detail(month_human).get('effect', '')}
+行動: {get_month_skill_detail(month_human).get('action', '')}
+
 【あなたの役割】
 あなたは深い洞察力を持つ運命の導き手「アトリ」であり、プレイヤーが現実を攻略するためのガイドです。
 
@@ -2197,6 +2266,48 @@ def main():
                 <div class="profile-value">{st.session_state.month_skill}</div>
             </div>
             """, unsafe_allow_html=True)
+            
+            # マンスリー・ストラテジー詳細表示
+            with st.expander("📖 マンスリー・ストラテジー詳細", expanded=False):
+                stage_detail = get_month_stage_detail(st.session_state.month_heaven)
+                zone_detail = get_month_zone_detail(st.session_state.month_earth)
+                skill_detail = get_month_skill_detail(st.session_state.month_human)
+                
+                st.markdown(f"""
+                ### 🌅 STAGE: {st.session_state.month_stage}
+                **{stage_detail.get('english', '')}** - {stage_detail.get('theme', '')}
+                
+                {stage_detail.get('description', '')}
+                
+                ---
+                
+                ### 🎯 ZONE: {st.session_state.month_zone}
+                **{zone_detail.get('english', '')}**
+                
+                **制約**: {zone_detail.get('constraint', '')}
+                
+                **攻略ヒント**: {zone_detail.get('hint', '')}
+                
+                ---
+                
+                ### ⚔️ SKILL: {st.session_state.month_skill}
+                **{skill_detail.get('english', '')}**
+                
+                **効果**: {skill_detail.get('effect', '')}
+                
+                **発動アクション**: {skill_detail.get('action', '')}
+                
+                ---
+                
+                ### 💡 今月の戦略
+                
+                **STAGE（{stage_detail.get('theme', '')}）** のテーマの中で、  
+**ZONE（{zone_detail.get('constraint', '')}）** という制約条件があります。  
+この環境で **SKILL（{skill_detail.get('effect', '')}）** を発動することが、今月の最適な攻略法です。
+                
+                アトリに相談して、具体的なアドバイスをもらいましょう！
+                """)
+            
             
             if st.button("🚪 ログアウト", use_container_width=True):
                 logout_user()

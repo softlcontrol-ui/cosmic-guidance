@@ -488,6 +488,14 @@ def calculate_essence_numbers(birthdate_str):
     
     return essence_human, essence_earth
 
+def calculate_essence_earth(birthdate_str):
+    """本質地運のみを計算（キングダムランクシステム用）"""
+    birth = datetime.strptime(birthdate_str, "%Y-%m-%d")
+    month_sum = birth.month
+    day_sum = birth.day
+    essence_earth = ((month_sum + day_sum - 1) % 13) + 1
+    return essence_earth
+
 def calculate_destiny_numbers(birthdate_str, age):
     """運命数を計算（13年周期）"""
     essence_human, essence_earth = calculate_essence_numbers(birthdate_str)
@@ -791,10 +799,13 @@ def get_next_rank_kp(current_rank: int):
 
 def get_kingdom_info(kingdom_number: int, rank: int) -> dict:
     """指定されたキングダム番号とランクの情報を取得"""
-    if kingdom_number not in KINGDOM_DEVELOPMENT:
+    # 既存システムは1-13、新システムは0-12なので変換
+    kingdom_index = (kingdom_number - 1) % 13
+    
+    if kingdom_index not in KINGDOM_DEVELOPMENT:
         return None
     
-    kingdom = KINGDOM_DEVELOPMENT[kingdom_number]
+    kingdom = KINGDOM_DEVELOPMENT[kingdom_index]
     rank_info = kingdom['ranks'].get(rank, {})
     
     return {
@@ -1205,7 +1216,7 @@ def check_kingdom_rank_up():
         st.session_state.kingdom_rank = new_rank
         
         # キングダム情報を取得
-        essence_earth = calculate_essence_earth(st.session_state.birthdate) if st.session_state.birthdate else 0
+        essence_earth = calculate_essence_earth(st.session_state.birthdate) if st.session_state.birthdate else 1
         kingdom_info = get_kingdom_info(essence_earth, new_rank)
         
         # ランクアップ通知を表示
@@ -2093,7 +2104,7 @@ def main():
             """, unsafe_allow_html=True)
             
             # キングダムランク表示（強化版）
-            essence_earth = calculate_essence_earth(st.session_state.birthdate) if st.session_state.birthdate else 0
+            essence_earth = calculate_essence_earth(st.session_state.birthdate) if st.session_state.birthdate else 1
             kingdom_info = get_kingdom_info(essence_earth, st.session_state.kingdom_rank)
             progress = calculate_rank_progress(st.session_state.kp, st.session_state.kingdom_rank)
             
@@ -2517,4 +2528,3 @@ if __name__ == "__main__":
         © 2024 THE PLAYER - Powered by Google Gemini AI
     </footer>
     """, unsafe_allow_html=True)
-

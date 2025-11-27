@@ -2165,27 +2165,16 @@ def main():
         st.markdown("---")
         st.markdown("### 💬 会話履歴")
         
-        # スクロール領域
-        st.markdown('<div id="chat-container" class="chat-wrapper">', unsafe_allow_html=True)
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        # 一番下にアンカーを置く
-        st.markdown('<div id="chat-end"></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Streamlitのst.containerでheightを指定してスクロール可能に
+        chat_container = st.container(height=500)
         
-        # ===== 自動スクロール（ChatGPTと同じ動き） =====
-        scroll_js = """
-        <script>
-        const chatContainer = document.getElementById('chat-container');
-        const chatEnd = document.getElementById('chat-end');
-        // 常に最下部へスクロール
-        setTimeout(function() {
-            chatEnd.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-        </script>
-        """
-        st.markdown(scroll_js, unsafe_allow_html=True)
+        with chat_container:
+            if st.session_state.messages:
+                for message in st.session_state.messages:
+                    with st.chat_message(message["role"]):
+                        st.markdown(message["content"])
+            else:
+                st.info("まだ会話がありません。クエストを受注して始めましょう！")
         
         # ユーザー入力を無効化（クエスト必須）
         if st.session_state.active_quest:

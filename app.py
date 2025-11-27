@@ -324,76 +324,19 @@ st.markdown("""
 
 # 13の数字の意味定義
 AVATARS = {
-    0: "🌫️ フリーランサー（自由人）",
     1: "⚔️ パイオニア（開拓者）",
-    2: "🧭 ナビゲーター（参謀）",
-    3: "🎨 クリエイター（遊び人）",
-    4: "🏗️ アーキテクト（建築家）",
-    5: "🏃 チャレンジャー（冒険家）",
-    6: "💚 ヒーラー（守護者）",
-    7: "🔮 ビジョナリー（予言者）",
-    8: "👑 コマンダー（統率者）",
-    9: "🎓 マスター（達人）",
-    10: "🔄 リノベーター（改革者）",
-    11: "✨ ミラクルメーカー（魔法使い）",
-    12: "🎼 コンダクター（指揮者）"
-}
-
-# アバター詳細データ（全レベル情報）
-# 現在のユーザーはNo.6 Lv.2なので、No.6の詳細を重点的に実装
-AVATAR_DETAILS = {
-    6: {
-        "name": "💚 ヒーラー（守護者）",
-        "traits": "愛・育成・調和",
-        "overview": "仲間を癒やし、育て、チームを守る愛の人。対立するものの間に入って調和を生み出し、温かいコミュニティや美しい関係性を育む、平和の象徴",
-        "npc_mode": "自己犠牲の世話人",
-        "player_mode": "愛と調和の結節点",
-        "paradigm_shift": "自分の世界は外側（他者）との繋がりで作られると知る。人と人を繋ぎ、愛を循環させることで、自らも満たされる",
-        "levels": {
-            0: {
-                "class_name": "Martyr（マーター／殉教者）",
-                "state": "「私が我慢すれば丸く収まる」と思い込み、都合よく扱われている状態。自分の意見を持たず、周りに合わせすぎて自分を見失い（八方美人）、他人の感情のゴミ箱にされて疲弊している",
-                "challenge": "自己喪失の自覚：自分を犠牲にして尽くすことは、美徳ではなく「自分への虐待」であると気づくこと",
-                "action": "NOの意思表示：小さな頼まれごとに対して、あえて断る練習をする。「嫌だ」「できない」と言うことで、自分を守る境界線を引く",
-                "next_step": "「いい人」をやめること。誰からも好かれようとするのをやめ、自分を大切にしてくれない人から離れる勇気を持つ"
-            },
-            1: {
-                "class_name": "Meddlesome Guardian（メドルサム・ガーディアン／お節介な過保護者）",
-                "state": "愛を注ぐ対象を見つけたが、距離感を間違えている状態。「あなたのため」と言いつつ自分の価値を証明しようとしたり、見返りを求めたりして、相手の自立を阻害（過干渉）している",
-                "challenge": "依存からの脱却：「必要とされたい」という自分の欠乏感を埋めるために、相手を利用していないか自問すること",
-                "action": "手放しと見守り：良かれと思って手や口を出したくなる瞬間に、グッとこらえる。相手が失敗する権利を奪わない",
-                "next_step": "矢印を「自分」に向けること。他人の世話を焼く時間があったら、そのエネルギーを全て「自分のケア」に注ぐと決める"
-            },
-            2: {
-                "class_name": "Boundary Guard（バウンダリー・ガード／境界の守り人）",
-                "state": "他人を助ける前に、まず自分を満たすことを覚え始めたリハビリ期間。健全な境界線（バウンダリー）を引き、自分の領域と他人の領域を区別できている",
-                "challenge": "自愛（セルフラブ）：自分が満たされていなければ、他人を本当に幸せにすることはできないと知ること。自分を一番に優先する",
-                "action": "自分へのおもてなし：美しいものを見たり、美味しいものを食べたりして、自分の五感を喜ばせる。自分が心地よいと感じる環境を整える",
-                "next_step": "「シャンパンタワーの法則」を知ること。一番上のグラス（自分）が溢れて初めて、下のグラス（周り）を満たせるのだと理解する"
-            },
-            3: {
-                "class_name": "Harmonizer（ハーモナイザー／調和の架け橋）",
-                "state": "自分が満たされた余剰分のエネルギーで、自然と周囲を助け始めた段階。無理なく人と人を繋いだり、その場にいるだけで空気を和ませたりする「調整役」として機能している",
-                "challenge": "循環させる愛：特定の人への執着ではなく、広く愛を循環させること。見返りを求めない奉仕の喜びを知る",
-                "action": "つなぎ合わせる：困っている人がいれば、助けてくれる人を紹介する。自分一人で抱えず、人の輪を使って解決を図る",
-                "next_step": "愛を「動詞」ではなく「状態」にすること。何かをしてあげるから愛があるのではなく、ただそこに在るだけで愛が伝わる存在を目指す"
-            },
-            4: {
-                "class_name": "Harmony Link（ハーモニー・リンク／愛と調和の結節点）",
-                "state": "【覚醒】自らも満たされ、溢れ出した愛で周囲を繋ぎ、癒やしている状態。彼らがいる場所では争いが消え、皆が安心して本音を話せる温かいコミュニティが育まれる。誰に対しても平等で、中立的な愛を注ぐことができる",
-                "challenge": "愛の拡大：身近な人だけでなく、より広い社会や世界に対して、調和のエネルギーを広げていくこと",
-                "action": "無条件の受容：相手の良い面も悪い面もジャッジせず、丸ごと受け入れる。その受容力が、相手の心を溶かし、本来の輝きを取り戻させる",
-                "next_step": "「私」という器を消すこと。個人的な感情を超え、宇宙の愛が通り抜ける透明なパイプとなる"
-            },
-            999: {
-                "class_name": "The Saint（ザ・セイント／聖者）",
-                "state": "【超越】特定の誰かだけでなく、万物を愛する境地。ただそこに座っているだけで、周囲の怒りや悲しみが浄化され、争いが自然と収まる「歩くパワースポット」。存在そのものが癒やしとなる",
-                "challenge": "慈悲の実践：全ての存在が繋がり合っていることを悟り、痛みを持つものに慈悲を向けること",
-                "action": "聖なる空間の創造：彼らが関わる場所は、聖域（サンクチュアリ）となる。言葉を超えた波動で、世界に平和と調和をもたらす",
-                "next_step": ""
-            }
-        }
-    }
+    2: "🤝 メディエーター（調停者）",
+    3: "🎭 クリエイター（創造者）",
+    4: "🏰 ビルダー（建設者）",
+    5: "🌊 エクスプローラー（探検者）",
+    6: "💚 サポーター（支援者）",
+    7: "💡 ビジョナリー（先見者）",
+    8: "👑 リーダー（統率者）",
+    9: "🔥 トランスフォーマー（変革者）",
+    10: "⚙️ アナリスト（分析者）",
+    11: "📡 コミュニケーター（伝達者）",
+    12: "🛡️ ストラテジスト（戦略家）",
+    13: "🌟 ユニバーサリスト（普遍者）"
 }
 
 KINGDOMS = {
@@ -428,311 +371,36 @@ MISSIONS = {
     13: "🌈 インテグレーション：統合せよ"
 }
 
-# 装備品（年間装備）- 運命 人運に対応
-# 人運 1-12 → No.1-12, 人運 13 → No.0
-EQUIPMENTS = {
-    0: "🔄 Reset Button（リセット・ボタン）",
-    1: "⛏️ First Pickaxe（最初のツルハシ）",
-    2: "🔭 High-Spec Binoculars（高性能双眼鏡）",
-    3: "🖍️ Magic Crayon（魔法のクレヨン）",
-    4: "📏 Spirit Level（水平器と定規）",
-    5: "📣 Megaphone（メガホン）",
-    6: "🚿 Watering Can（恵みのジョウロ）",
-    7: "🧭 Vision Compass（ビジョン・コンパス）",
-    8: "🏄 Surfboard（サーフボード）",
-    9: "✂️ Sorting Shears（選別のハサミ）",
-    10: "🧨 Dynamite（変革のダイナマイト）",
-    11: "🪄 Miracle Rod（奇跡の杖）",
-    12: "🏃 Relay Baton（継承のバトン）"
-}
-
-EQUIPMENT_DETAILS = {
-    0: {
-        "name": "🔄 Reset Button（リセット・ボタン）",
-        "function": "強制終了と初期化",
-        "usage": "複雑になりすぎた人間関係や、動かなくなったプロジェクトを「なかったこと」にする道具",
-        "strategy": "修理しようとせず、迷わずボタンを押すこと。思考を停止させ、「ゼロに戻す」機能を使う"
-    },
-    1: {
-        "name": "⛏️ First Pickaxe（最初のツルハシ）",
-        "function": "一点突破と開拓",
-        "usage": "誰もいない荒野や、硬い壁に「最初の風穴」を開けるための道具",
-        "strategy": "誰かと一緒に持とうとせず、一人で振り下ろすこと。「私がやる」という意志の力を込めて使う"
-    },
-    2: {
-        "name": "🔭 High-Spec Binoculars（高性能双眼鏡）",
-        "function": "遠見と分析",
-        "usage": "遠くの未来や、相手の心の中を拡大して見るための道具",
-        "strategy": "足は動かさず、レンズを覗くことに集中すること。焦って走り出すと、この道具の性能は発揮されない"
-    },
-    3: {
-        "name": "🖍️ Magic Crayon（魔法のクレヨン）",
-        "function": "具現化と彩り",
-        "usage": "空中に描いたものが実体化するような、創造の道具",
-        "strategy": "上手く描こうとせず、落書きのように自由に使うこと。「面白そう」という衝動で手を動かす"
-    },
-    4: {
-        "name": "📏 Spirit Level（水平器と定規）",
-        "function": "計測と安定",
-        "usage": "積み上げたものが崩れないよう、正確に測り、固定するための道具",
-        "strategy": "感覚で進めず、メモリ（数字や実績）に合わせてきっちりと使うこと。確実性を最優先する"
-    },
-    5: {
-        "name": "📣 Megaphone（メガホン）",
-        "function": "拡散と主張",
-        "usage": "自分の声を何倍にも大きくして、遠くまで届ける道具",
-        "strategy": "空気を読まず、大声で叫ぶこと（発信する）。「私はここにいる！」と主張するために使う"
-    },
-    6: {
-        "name": "🚿 Watering Can（恵みのジョウロ）",
-        "function": "育成と調和",
-        "usage": "乾いた場所に水をやり、種を育てる道具",
-        "strategy": "自分のためではなく、他者（花）のために使うこと。見返りを求めず、ただ注ぐだけでいい"
-    },
-    7: {
-        "name": "🧭 Vision Compass（ビジョン・コンパス）",
-        "function": "指針と理想",
-        "usage": "現実の地図には載っていない「理想郷」の方角を指し示す特殊な羅針盤",
-        "strategy": "足元の悪路は見ず、針が指す「遠くの未来」だけを見つめて進むこと"
-    },
-    8: {
-        "name": "🏄 Surfboard（サーフボード）",
-        "function": "波乗りと加速",
-        "usage": "自力で泳ぐのではなく、押し寄せる「時代の波」や「他人の力」に乗って、高速で移動するための道具",
-        "strategy": "波に逆らわず、バランスを取ることに集中すること。来た波（オファー）には、とりあえず乗ってみる"
-    },
-    9: {
-        "name": "✂️ Sorting Shears（選別のハサミ）",
-        "function": "剪定と完了",
-        "usage": "伸びすぎた枝葉や、不要になった過去を切り落とす道具",
-        "strategy": "情に流されず、スパッと切ること。「もったいない」と思わず、身軽になるために使う"
-    },
-    10: {
-        "name": "🧨 Dynamite（変革のダイナマイト）",
-        "function": "破壊と刷新",
-        "usage": "古くなって使えなくなった建物やシステムを、一撃で破壊する道具",
-        "strategy": "爆発を恐れないこと。過去の成功体験ごと吹き飛ばす覚悟で、点火スイッチを押す"
-    },
-    11: {
-        "name": "🪄 Miracle Rod（奇跡の杖）",
-        "function": "直感と魔法",
-        "usage": "一振りすれば、壁に扉が現れたり、ワープしたりする魔法の杖",
-        "strategy": "使い方のマニュアルはない。「今だ！」と閃いた瞬間に振る。頭で考えずに使うこと"
-    },
-    12: {
-        "name": "🏃 Relay Baton（継承のバトン）",
-        "function": "接続と委託",
-        "usage": "自分が走るのをやめ、次の走者に想いと記録を託すための道具",
-        "strategy": "握りしめ続けず、適切な相手に「渡す」こと。自分がゴールするのではなく、繋ぐことを目的にする"
-    }
-}
-
-
 FIELDS = {
-    0: "🌫️ BLANK FIELD（始まりの更地）",
-    1: "🏭 STARTUP GARAGE（創業のガレージ）",
-    2: "☕ CROSSROAD CAFE（分岐点のカフェ）",
-    3: "🎪 CREATIVE PARK（創造の広場）",
-    4: "🏗️ SOLID BASE（堅牢な土台）",
-    5: "⛵ WINDY PORT（風の港）",
-    6: "🌸 COMMUNITY GARDEN（調和の庭）",
-    7: "🔭 OBSERVATORY（天空の展望台）",
-    8: "🏙️ EXPANSION CITY（繁栄の都市）",
-    9: "📚 ARCHIVE LIBRARY（知恵の書庫）",
-    10: "⚗️ TRANSFORM ZONE（変容の実験室）",
-    11: "🏜️ MIRACLE DESERT（奇跡の砂漠）",
-    12: "🎛️ CONTROL ROOM（中央指令室）"
-}
-
-FIELD_DETAILS = {
-    0: {
-        "name": "🌫️ BLANK FIELD（始まりの更地）",
-        "situation": "古い建物が撤去され、何もない地平線が広がる場所。静寂に包まれ、すべてがリセットされている",
-        "quest": "整地と浄化",
-        "description": "装備した道具を使って、残っている瓦礫をきれいに片付け、次なる建設のために土地を清める作業。無理に建てようとせず、空っぽの状態を維持する"
-    },
-    1: {
-        "name": "🏭 STARTUP GARAGE（創業のガレージ）",
-        "situation": "雑多なパーツや素材が転がっている、活気ある作業場。まだ何者でもないが、何かを始めようとする熱気に満ちている",
-        "quest": "種まきとプロトタイプ作成",
-        "description": "装備した道具（ツルハシなど）を使って、手元にある素材を組み合わせ、最初の試作品を作る。小さな「一歩」を刻み、自分の旗を立てる作業"
-    },
-    2: {
-        "name": "☕ CROSSROAD CAFE（分岐点のカフェ）",
-        "situation": "幾つもの道が交差する場所にある、見晴らしの良いカフェ。旅人たちが地図を広げ、次の行き先を相談している",
-        "quest": "ルート選定と情報収集",
-        "description": "装備した道具（双眼鏡など）を使って、それぞれの道の先を偵察する。焦って出発せず、座ってコーヒーを飲みながら、最も有利なルートを見極める作業"
-    },
-    3: {
-        "name": "🎪 CREATIVE PARK（創造の広場）",
-        "situation": "音楽が鳴り、人々が自由に表現を楽しんでいる開放的な公園。ルール無用で、面白いことが次々と起きている",
-        "quest": "表現とエンタメ",
-        "description": "装備した道具（クレヨンなど）を使って、自分のアイデアを形にしたり、即興でパフォーマンスをする。周りを巻き込んで「楽しい！」の渦を作る作業"
-    },
-    4: {
-        "name": "🏗️ SOLID BASE（堅牢な土台）",
-        "situation": "石畳やレンガ造りの建物が並ぶ、秩序ある建設現場。安全第一で、確実な作業が進められている",
-        "quest": "基礎工事とルール作り",
-        "description": "装備した道具（定規・水平器など）を使って、歪みのない正確な土台を築く。毎日のルーティンを守り、崩れないシステムを構築する地道な作業"
-    },
-    5: {
-        "name": "⛵ WINDY PORT（風の港）",
-        "situation": "世界中から船が出入りし、常に新しい風が吹いている港町。留まる人はおらず、情報は一瞬で入れ替わる",
-        "quest": "交易と冒険",
-        "description": "装備した道具（メガホンなど）を使って、新しい情報を発信したり、未知の船に飛び乗ったりする。変化の波を乗りこなし、活動範囲を広げる作業"
-    },
-    6: {
-        "name": "🌸 COMMUNITY GARDEN（調和の庭）",
-        "situation": "美しい花々が咲き乱れ、人々が穏やかに談笑している庭園。争いはなく、助け合いの精神に満ちている",
-        "quest": "水やりと交流",
-        "description": "装備した道具（ジョウロなど）を使って、花（人）に水をやり、関係性を育てる。困っている人に手を貸し、コミュニティの絆を深める作業"
-    },
-    7: {
-        "name": "🔭 OBSERVATORY（天空の展望台）",
-        "situation": "雲の上にある静かな塔。地上の雑音は届かず、星空や遥か彼方の景色だけが見える",
-        "quest": "ビジョン策定と理想の追求",
-        "description": "装備した道具（コンパスなど）を使って、本当の目的地（理想）の方角を定める。現実的な制約を忘れ、最高の未来図を描く作業"
-    },
-    8: {
-        "name": "🏙️ EXPANSION CITY（繁栄の都市）",
-        "situation": "高層ビルが立ち並び、莫大な富と権力が動いている大都市。個人の力ではなく、組織やシステムが主役の場所",
-        "quest": "拡大と統率",
-        "description": "装備した道具（サーフボードなど）を使って、大きなビジネスの波に乗る。オファーを受け入れ、チームを動かし、成果を最大化する作業"
-    },
-    9: {
-        "name": "📚 ARCHIVE LIBRARY（知恵の書庫）",
-        "situation": "あらゆる記録が収められた静謐な図書館。一つの時代の終わりを告げる鐘が鳴り響いている",
-        "quest": "編集と総決算",
-        "description": "装備した道具（ハサミなど）を使って、膨大なデータの中から「本質」だけを切り抜き、残りを処分する。物語のエンディングを美しく仕上げる作業"
-    },
-    10: {
-        "name": "⚗️ TRANSFORM ZONE（変容の実験室）",
-        "situation": "古い物質が分解され、新しいエネルギーに変換されている実験室。爆発や化学反応が絶え間なく起きている",
-        "quest": "破壊と再構築",
-        "description": "装備した道具（ダイナマイトなど）を使って、古くなった常識や枠組みを壊す。形を変えることを恐れず、新しい自分へとアップデートする作業"
-    },
-    11: {
-        "name": "🏜️ MIRACLE DESERT（奇跡の砂漠）",
-        "situation": "地図にない幻の砂漠。ここでは物理法則が通用せず、蜃気楼の中に真実が隠されている",
-        "quest": "直感探索と魔法",
-        "description": "装備した道具（魔法の杖など）を使って、見えない道を見つけ出す。論理ではなく「ピンときた」方向に進み、隠された宝（チャンス）を掘り当てる作業"
-    },
-    12: {
-        "name": "🎛️ CONTROL ROOM（中央指令室）",
-        "situation": "すべてのモニターが並び、世界全体の状況を把握できる場所。直接現場には出ず、通信だけで指示を送る",
-        "quest": "調整と引き継ぎ",
-        "description": "装備した道具（バトンなど）を使って、適切な人に適切な役割を渡す。全体がスムーズに動くように微調整を行い、次世代へシステムを託す作業"
-    }
+    1: "🚀 スタートライン（始まりの地）",
+    2: "⚖️ バランスポイント（均衡の場）",
+    3: "🎪 プレイグラウンド（遊びの庭）",
+    4: "🏰 ファウンデーション（基礎の地）",
+    5: "🌊 アドベンチャーゾーン（冒険領域）",
+    6: "🏡 コンフォートゾーン（安心領域）",
+    7: "🌌 ドリームフィールド（夢の原野）",
+    8: "⚡ パワースポット（力の源泉）",
+    9: "🔥 トランジションゾーン（変容の地）",
+    10: "📊 アナリシスエリア（分析領域）",
+    11: "🌐 ネットワークフィールド（繋がりの場）",
+    12: "🎯 ストラテジーベース（戦略基地）",
+    13: "✨ ユニバーサルフィールド（普遍の場）"
 }
 
 REWARDS = {
-    0: "📄 Complete Reset（完全なる白紙）",
-    1: "📖 Starter Kit（冒険の書）",
-    2: "🔍 Scouting Report（偵察報告書）",
-    3: "💌 Invitation Letter（新世界への招待状）",
-    4: "📜 Trust License（信頼の証）",
-    5: "🎭 Change Skin（変容のマント）",
-    6: "🔑 Union Key（結束の鍵）",
-    7: "🏆 Victory Title（勝利の称号）",
-    8: "👑 Royal Offer（王からの勅命）",
-    9: "🗺️ Completed Map（完成した地図）",
-    10: "🎫 Next Stage Ticket（次次元への切符）",
-    11: "✨ Miracle Trigger（奇跡の引き金）",
-    12: "💎 Realization Gem（具現化の宝石）"
-}
-
-REWARD_DETAILS = {
-    0: {
-        "name": "📄 Complete Reset（完全なる白紙）",
-        "overview": "過去のデータやしがらみを全て消去し、ゼロから再構築できる権利。「変容と形の更新」の力が宿っている",
-        "effects": "抱えていた重荷が消え、身軽になれる / どんな自分にもなれる「無限の可能性」が手に入る / 複雑だった問題が強制終了し、静寂が訪れる",
-        "building_role": "整地・解体工事",
-        "building_effect": "古くなった設備を取り壊し、新しい建物を建てるためのスペースを確保する。キングダムの敷地を拡張し、更地にするための必須プロセス"
-    },
-    1: {
-        "name": "📖 Starter Kit（冒険の書）",
-        "overview": "見えなかった状況が姿を現し、新しい物語を始めるための初期装備一式。「輝く未来」への地図の断片",
-        "effects": "「自分は何者か」というアイデンティティが確立される / 霧が晴れるように、進むべき最初の一歩が見えてくる / 周囲から「あの人は新しいことを始めた」と認知される",
-        "building_role": "礎石（定礎）",
-        "building_effect": "新しい建物の「最初の石」を置く。キングダムに新しいエリアや機能を追加する際の、基準点となる重要な石"
-    },
-    2: {
-        "name": "🔍 Scouting Report（偵察報告書）",
-        "overview": "進むべき道（太陽の道か月の道か）を見極めるための詳細な分析データ。機会を待つ間に得られる、確かな指針",
-        "effects": "焦って失敗することを回避できる / 表面的な情報ではなく、物事の裏側にある「真実」を知ることができる / 最良のタイミングで動くための「確信」が手に入る",
-        "building_role": "設計図・測量",
-        "building_effect": "どこに何を配置すれば最適かを決めるための精密な図面。無駄な建築を防ぎ、キングダムの動線を最適化する"
-    },
-    3: {
-        "name": "💌 Invitation Letter（新世界への招待状）",
-        "overview": "現在と過去が混ざり合い、新しい世界への扉を開くためのチケット。思わぬ出会いや出来事を引き寄せるパスポート",
-        "effects": "想像もしなかった楽しいコミュニティに参加できる / 運命的な「結合」が起き、新しいパートナーや仲間ができる / 退屈な日常が、刺激的なエンターテインメントに変わる",
-        "building_role": "装飾・インテリア",
-        "building_effect": "無機質だった建物に、彩りや遊び心を加える。居住性を高め、住人たちが楽しく過ごせるための娯楽施設やアートを追加する"
-    },
-    4: {
-        "name": "📜 Trust License（信頼の証）",
-        "overview": "社会的な信用や、人生の土台となる安定した基盤。これまでの体験と学びが結晶化した、揺るぎない実績の証明書",
-        "effects": "周囲から「あなたなら任せられる」と高く評価される / 経済的、精神的な安定が手に入る / 自分の城を建てるための、強固な土地が得られる",
-        "building_role": "柱・城壁",
-        "building_effect": "キングダムを支える太い柱や、外敵から守る頑丈な壁。この素材が多いほど、キングダムの防御力と耐久度が上がり、崩れなくなる"
-    },
-    5: {
-        "name": "🎭 Change Skin（変容のマント）",
-        "overview": "周囲の状況に合わせて自在に姿を変えられる、メタモルフォーゼ（変身）の能力。新しい環境に溶け込むための適応力",
-        "effects": "どんな環境でも生き抜けるサバイバル能力が身につく / 膠着していた状態が動き出し、新しい展開が訪れる / 古い自分を脱ぎ捨て、バージョンアップした自分になれる",
-        "building_role": "換気システム・窓",
-        "building_effect": "閉鎖的だった空間に風を通す。新しい流行や技術を取り入れるための窓口を作り、キングダムの空気を常に新鮮に保つ"
-    },
-    6: {
-        "name": "🔑 Union Key（結束の鍵）",
-        "overview": "世界を拡大し、他者と繋がるためのマスターキー。様々な価値観を受け入れ、共鳴することで開かれる扉",
-        "effects": "孤独感が消え、愛と調和に満ちた居場所ができる / 自分にない才能を持った人々と協力体制が築ける / 精神的に満たされ、平和な心を手に入れることができる",
-        "building_role": "広場・ゲストルーム",
-        "building_effect": "人と人が交流するためのスペース。住人同士の結束を高めたり、外部からの客人を招き入れるための、温かい居場所を作る"
-    },
-    7: {
-        "name": "🏆 Victory Title（勝利の称号）",
-        "overview": "これまでの評価が変容し、一つの「完成」として認められた証。人生のタイトルが定まり、生きる意味が明確になるトロフィー",
-        "effects": "迷いが消え、自分が目指すべき「頂上」がはっきり見える / 社会的な評価が一変し、一目置かれる存在になる / 独自の美学や哲学が完成し、自信を持って生きられる",
-        "building_role": "塔・シンボル",
-        "building_effect": "遠くからでも見える、キングダムの象徴（ランドマーク）。高さを出し、キングダムの理念や理想を周囲に示すためのアンテナ"
-    },
-    8: {
-        "name": "👑 Royal Offer（王からの勅命）",
-        "overview": "他者から与えられる「新しい居場所」や「役割」。自分一人では辿り着けない場所へ連れて行ってくれる、運命の招待状",
-        "effects": "自分で営業しなくても、向こうからチャンスがやってくる / 実力以上の大きなステージに引き上げられる（棚ぼた運） / 不足していた部分を、他者が完璧に補ってくれる",
-        "building_role": "宝物庫・交易路",
-        "building_effect": "外部からの富や資源を貯蔵する蔵、あるいは物資を運び入れるための道路。キングダムの経済を潤し、規模を拡大させるための設備"
-    },
-    9: {
-        "name": "🗺️ Completed Map（完成した地図）",
-        "overview": "人生の地図を完成させるための最後のピース。過去を清算し、次のステージへ進むために必要な「卒業証書」",
-        "effects": "長年の悩みや課題が解決し、スッキリする / 過去の経験がすべて「知恵」に変わり、無駄がなかったと悟る / 次の旅へ向けて、身軽で自由な状態になれる",
-        "building_role": "屋根・門",
-        "building_effect": "建物の一つの区画を完成させる仕上げ。雨風をしのぐ屋根や、エリアを区切る門を設置し、一つの機能を「完結」させる"
-    },
-    10: {
-        "name": "🎫 Next Stage Ticket（次次元への切符）",
-        "overview": "新たな道が出現し、これまでの延長線上ではない未来へ進む権利。運命の螺旋が一段上がり、次元上昇（アセンション）するパス",
-        "effects": "停滞していた壁が壊れ、一気に視界が開ける / 今までとは全く違う、ハイレベルな環境や人間関係に移行する / 「本当の人生」がここから始まると実感できる",
-        "building_role": "増築・別館",
-        "building_effect": "既存の建物とは全く違う様式の、新しい棟を建てる。キングダムの機能や見た目をガラリと変え、バージョンアップさせるための大規模改修素材"
-    },
-    11: {
-        "name": "✨ Miracle Trigger（奇跡の引き金）",
-        "overview": "何かが始まる「きっかけ」となる矢印。一直線ではないが、確実に前へと進むためのサインや予兆",
-        "effects": "偶然の連続（シンクロニシティ）が起き、トントン拍子に進む / 理屈では説明できない「ラッキー」な出来事に遭遇する / 眠っていた才能や可能性が、突然目覚める",
-        "building_role": "パワースポット・隠し通路",
-        "building_effect": "論理的な構造とは関係のない、不思議な力が宿る祭壇や、一瞬で移動できる隠し通路。キングダムに魔法的な効果を付与する"
-    },
-    12: {
-        "name": "💎 Realization Gem（具現化の宝石）",
-        "overview": "心の中の思いや希望が、現実の世界で具体的な「形」となった結晶。11で掴んだきっかけが実を結び、手で触れられる成果となったもの",
-        "effects": "夢物語だと思っていたことが、現実の生活の一部になる / 自分の成果が、他者の役にも立つ「遺産（レガシー）」となる / 努力が報われ、目に見える豊かさとして手元に残る",
-        "building_role": "記念碑・ライブラリー",
-        "building_effect": "これまでの歴史や知恵を保存するための場所。キングダムの伝統を守り、次世代へ継承するための重要なアーカイブ施設"
-    }
+    1: "🎁 イニシアチブ（主導権）",
+    2: "🤝 パートナーシップ（協力者）",
+    3: "🎨 インスピレーション（霊感）",
+    4: "🏆 スタビリティ（安定）",
+    5: "🌟 チャンス（機会）",
+    6: "💝 トラスト（信頼）",
+    7: "🔮 ビジョン（洞察）",
+    8: "👑 オーソリティ（権威）",
+    9: "🔥 トランスフォーメーション（変革）",
+    10: "📈 クラリティ（明晰さ）",
+    11: "📢 オファー（抜擢）",
+    12: "🎯 ストラテジー（戦略）",
+    13: "✨ フルフィルメント（充足）"
 }
 
 MONTH_STAGES = {
@@ -886,22 +554,14 @@ def calculate_profile(birthdate_str):
     # 月運を計算
     month_heaven, month_earth, month_human = calculate_month_numbers(birthdate_str)
     
-    # アバター・キングダム（本質人運13はNo.0に対応）
-    avatar_index = 0 if essence_human == 13 else essence_human
-    avatar = AVATARS[avatar_index]
+    # アバター・キングダム
+    avatar = AVATARS[essence_human]
     kingdom = KINGDOMS[essence_earth]
     
-    # ミッション・装備品・フィールド・報酬
+    # ミッション・フィールド・報酬
     mission = MISSIONS[destiny_human]
-    # 装備品: 人運13はNo.0（Reset Button）に対応
-    equipment_index = 0 if destiny_human == 13 else destiny_human
-    equipment = EQUIPMENTS[equipment_index]
-    # フィールド: 地運13はNo.0（BLANK FIELD）に対応
-    field_index = 0 if destiny_earth == 13 else destiny_earth
-    field = FIELDS[field_index]
-    # 報酬: 天運13はNo.0（Complete Reset）に対応
-    reward_index = 0 if destiny_heaven == 13 else destiny_heaven
-    reward = REWARDS[reward_index]
+    field = FIELDS[destiny_earth]
+    reward = REWARDS[destiny_heaven]
     
     # 月間
     month_stage = MONTH_STAGES[month_heaven]
@@ -919,7 +579,6 @@ def calculate_profile(birthdate_str):
         'destiny_earth': destiny_earth,
         'destiny_heaven': destiny_heaven,
         'mission': mission,
-        'equipment': equipment,  # 装備品を追加
         'field': field,
         'reward': reward,
         'month_heaven': month_heaven,
@@ -931,6 +590,250 @@ def calculate_profile(birthdate_str):
     }
 
 # ==================== THE PLAYER システム ====================
+
+# ==================== キングダムランクシステム ====================
+
+# ランク閾値定義（KPベース）
+KINGDOM_RANK_THRESHOLDS = {
+    0: 0,      # Rank 0: Wasteland（荒れ地）
+    1: 100,    # Rank 1: Base Camp（整地）
+    2: 300,    # Rank 2: Hideout（建設中）
+    3: 600,    # Rank 3: Community（拡張）
+    4: 1000    # Rank 4: Kingdom（完成）
+}
+
+# ランク名称
+KINGDOM_RANK_NAMES = {
+    0: "Wasteland（荒れ地）",
+    1: "Base Camp（整地）",
+    2: "Hideout（建設中）",
+    3: "Community（拡張）",
+    4: "Kingdom（完成）"
+}
+
+# ランク絵文字
+KINGDOM_RANK_EMOJIS = {
+    0: "🏜️",
+    1: "⛺",
+    2: "🏠",
+    3: "🏘️",
+    4: "🏰"
+}
+
+# 13種類のキングダム発展データ（完全版）
+KINGDOM_DEVELOPMENT = {
+    0: {  # オープン・テラス
+        'name': 'オープン・テラス',
+        'subtitle': '風通しの良い広場',
+        'ranks': {
+            0: {'name': '密室', 'english': 'Closed Room', 'description': '傷つくのを恐れて壁を作り、誰も入れないように閉じこもっている。空気が澱み、窒息しそうな閉塞感がある。'},
+            1: {'name': '換気', 'english': 'Ventilation', 'description': '窓を少し開け、外の空気や人の気配を感じ始める。世界は敵ばかりではないと気づく。'},
+            2: {'name': '庭先', 'english': 'Garden Chair', 'description': '自分のテリトリーに、信頼できる人を少しだけ招き入れる。「来るもの拒まず」の練習を始める。'},
+            3: {'name': '公園', 'english': 'Public Park', 'description': '多くの人が憩う場所となる。様々な情報やチャンスが行き交い、予期せぬ出会いが生まれる。'},
+            4: {'name': 'オープン・テラス', 'english': 'Open Terrace', 'description': '【完成】境界線がなく、世界と一体化した自由な広場。あなたがそこにいるだけで、雲のように形を変えながら、あらゆる可能性を受け入れる聖域となる。'}
+        }
+    },
+    1: {  # マグネット・ベース
+        'name': 'マグネット・ベース',
+        'subtitle': '引き寄せの基地',
+        'ranks': {
+            0: {'name': '散乱', 'english': 'Scrap Yard', 'description': '必要なものが何もなく、ガラクタばかりが集まっている。あるいは、自分から必死に探し回り、疲れ果てている。'},
+            1: {'name': '磁石', 'english': 'Antenna', 'description': '「私はこれが好き」という旗を立てる。自分の磁力を信じ、探し回るのをやめて「待つ」姿勢を作る。'},
+            2: {'name': '工房', 'english': 'Atelier', 'description': '集まってきた少数の材料や仲間を使って、ブリコラージュ（即興制作）を始める。小さな循環が生まれる。'},
+            3: {'name': '秘密基地', 'english': 'Secret Base', 'description': '独自の魅力に惹かれた人々が集い、独自の文化が形成される。計画書のない、偶発的な創造が連続する。'},
+            4: {'name': 'マグネット・ベース', 'english': 'Magnet Base', 'description': '【完成】座っているだけで、世界中から最高の人材と物資が吸い寄せられる場所。集まったピースが自動的に組み上がり、巨大な城となる。'}
+        }
+    },
+    2: {  # フロンティア・ポート
+        'name': 'フロンティア・ポート',
+        'subtitle': '最先端の港',
+        'ranks': {
+            0: {'name': '澱んだ池', 'english': 'Dead End', 'description': '変化がなく、水が腐っている。過去の栄光や安定にしがみつき、「ここから動きたくない」と停滞している。'},
+            1: {'name': '筏作り', 'english': 'Raft Building', 'description': '「ここではないどこか」へ行くための準備を始める。現状への違和感を認め、脱出の計画を立てる。'},
+            2: {'name': '桟橋', 'english': 'Pier', 'description': '小さな船が出入りし始める。外の世界からのニュースが届き、未来への希望が湧いてくる。'},
+            3: {'name': '貿易所', 'english': 'Trading Post', 'description': '多くの旅人が行き交い、常に新しい風が吹いている。一つの場所に留まらず、常に更新され続ける環境。'},
+            4: {'name': 'フロンティア・ポート', 'english': 'Frontier Port', 'description': '【完成】常に最先端の船が出航する、希望の港。ここにいれば、世界中の「次（ネクスト）」に一番乗りできる。永遠に成長し続ける場所。'}
+        }
+    },
+    3: {  # スカイ・バルーン
+        'name': 'スカイ・バルーン',
+        'subtitle': '空飛ぶ気球',
+        'ranks': {
+            0: {'name': '檻', 'english': 'Cage', 'description': '地面に鎖で繋がれ、重たい荷物（責任や常識）を背負わされている。「こうすべき」に縛られ、息ができない。'},
+            1: {'name': '凧揚げ', 'english': 'Kite', 'description': '風の存在に気づく。少しだけ荷物を下ろし、心の中で「もし自由だったら」と空を見上げる。'},
+            2: {'name': 'テント', 'english': 'Mobile Living', 'description': '一箇所に定住するのをやめ、身軽になる。風向きが変わればすぐに移動できる柔軟性を持つ。'},
+            3: {'name': '飛行船', 'english': 'Airship', 'description': '多くの人を乗せて、風に乗って旅をする。変化を楽しみ、トラブルさえも「面白いイベント」に変える。'},
+            4: {'name': 'スカイ・バルーン', 'english': 'Sky Balloon', 'description': '【完成】重力から解放された、完全な自由空間。風まかせに漂いながら、誰も見たことのない景色を楽しみ続ける。'}
+        }
+    },
+    4: {  # ストーン・キャッスル
+        'name': 'ストーン・キャッスル',
+        'subtitle': '堅牢な城',
+        'ranks': {
+            0: {'name': '砂上の楼閣', 'english': 'Sand Castle', 'description': '基礎がなく、少しの風で崩れそう。「大丈夫だろうか」という不安が常にあり、見栄えだけを気にしている。'},
+            1: {'name': '基礎工事', 'english': 'Base Work', 'description': '地味な穴掘りと石積み。成果は見えないが、確実なデータと経験を積み重ねる一番大事な時期。'},
+            2: {'name': '石壁', 'english': 'Wall', 'description': '自分を守る壁が完成。外敵（不安要素）をシャットアウトし、安心できるプライベート空間を確保する。'},
+            3: {'name': '砦', 'english': 'Fort', 'description': '機能を持ち、他人を守れるようになる。信頼できる仲間が集まり、盤石な組織となる。'},
+            4: {'name': 'ストーン・キャッスル', 'english': 'Stone Castle', 'description': '【完成】歴史に残る大要塞。何が起きても揺るがない絶対的な安心と信頼が、そこにはある。'}
+        }
+    },
+    5: {  # シーズン・ガーデン
+        'name': 'シーズン・ガーデン',
+        'subtitle': '四季の庭',
+        'ranks': {
+            0: {'name': '荒れ地', 'english': 'Wasteland', 'description': '手入れがされず、雑草が生い茂っている。あるいは「ずっと春でなければならない」と変化を拒否し、無理をしている。'},
+            1: {'name': '耕作', 'english': 'Cultivation', 'description': '自分の役割を一つ一つ確認し、不要なものを抜く。それぞれの種（役割）に適した場所を作る。'},
+            2: {'name': '苗床', 'english': 'Nursery', 'description': '小さな芽が出始める。役割分担が機能し始め、それぞれの個性が育つ環境が整う。'},
+            3: {'name': '果樹園', 'english': 'Orchard', 'description': '季節ごとに違う収穫がある。連携がスムーズになり、変化が「豊かさ」を生むサイクルに入る。'},
+            4: {'name': 'シーズン・ガーデン', 'english': 'Season Garden', 'description': '【完成】移ろいゆく季節（役割）の全てが美しい、完璧な調和の庭。常に新陳代謝し、生命力に溢れている。'}
+        }
+    },
+    6: {  # ブリッジ・アイランド
+        'name': 'ブリッジ・アイランド',
+        'subtitle': '橋のかかった島々',
+        'ranks': {
+            0: {'name': '孤島', 'english': 'Lonely Island', 'description': '周囲との交流を絶ち、ポツンと取り残されている。誰にも理解されない寂しさを抱えている。'},
+            1: {'name': 'ボトルメール', 'english': 'Message in a Bottle', 'description': '海に向かってメッセージを投げる。「私はここにいる」と外の世界へシグナルを送り、接点を探す。'},
+            2: {'name': '桟橋', 'english': 'Pier', 'description': '小さな船が着ける場所を作る。特定の人との深い対話や、少人数のコミュニティが生まれる。'},
+            3: {'name': '連絡船', 'english': 'Ferry', 'description': '定期的な交流が始まる。自分と似た価値観を持つ島々（人々）と繋がり、協力関係を築く。'},
+            4: {'name': 'ブリッジ・アイランド', 'english': 'Bridge Island', 'description': '【完成】無数の橋で繋がれた、豊かな経済圏。個性を保ちながらも孤独ではない、愛と交流のサンクチュアリ。'}
+        }
+    },
+    7: {  # ドリーム・タワー
+        'name': 'ドリーム・タワー',
+        'subtitle': '理想の塔',
+        'ranks': {
+            0: {'name': '地下室', 'english': 'Underground', 'description': '目の前の現実に埋没し、空を見上げることを忘れている。「どうせ無理だ」と夢を封印し、暗い場所にいる。'},
+            1: {'name': '梯子', 'english': 'Ladder', 'description': '地面に梯子をかける。少し高い位置から周囲を見渡し、「あそこへ行きたい」という方向性を確認する。'},
+            2: {'name': '展望台', 'english': 'Observatory', 'description': '自分一人だけの構想部屋。世間の常識から離れ、遠い未来を詳細にシミュレーションする。'},
+            3: {'name': '灯台', 'english': 'Lighthouse', 'description': '塔に明かりが灯り、周囲からも見えるようになる。その光（理想）に惹かれて、仲間が集まり始める。'},
+            4: {'name': 'ドリーム・タワー', 'english': 'Dream Tower', 'description': '【完成】雲を突き抜ける高さに達した理想郷。下界の常識は通用しない。ここからは、過去も未来も全てが見渡せる。'}
+        }
+    },
+    8: {  # リバー・サイド
+        'name': 'リバー・サイド',
+        'subtitle': '大河のほとり',
+        'ranks': {
+            0: {'name': '干上がった川', 'english': 'Dry River', 'description': '流れがなく、何も運ばれてこない。あるいは、自力で水を引こうとして力尽きている。孤独な努力。'},
+            1: {'name': '水脈', 'english': 'Source', 'description': 'わずかな水の流れを見つける。人の縁や、小さなチャンスの芽を大切にし始める。'},
+            2: {'name': '小川', 'english': 'Stream', 'description': '流れに乗る感覚を掴む。流れてくる小さな丸太（助け）に掴まり、楽に進むことを覚える。'},
+            3: {'name': '運河', 'english': 'Canal', 'description': '流れを整備し、多くの船が行き交う場所にする。自分だけでなく、周りの人も運ぶシステムを作る。'},
+            4: {'name': 'リバー・サイド', 'english': 'River Side', 'description': '【完成】悠久の大河のほとりで、豊かさを享受する。自ら動かなくても、必要なものは全て上流から運ばれてくる。'}
+        }
+    },
+    9: {  # クライミング・マウンテン
+        'name': 'クライミング・マウンテン',
+        'subtitle': '登山道',
+        'ranks': {
+            0: {'name': '平地', 'english': 'Flat Land', 'description': '目指すべき山が見つからず、退屈な日々を過ごしている。向上心を持て余し、エネルギーが内側で腐っている。'},
+            1: {'name': '登山口', 'english': 'Gate', 'description': '「あの山に登ろう」と目標を定める。必要な装備を整え、最初の一歩を踏み出す。'},
+            2: {'name': 'ベースキャンプ', 'english': 'Base Camp', 'description': '中腹まで到達する。厳しさも知るが、振り返ると絶景が広がっていることに気づき、達成感を味わう。'},
+            3: {'name': '稜線', 'english': 'Ridge', 'description': '頂上が見えてくる。困難な道だが、挑戦すること自体に喜びを感じ、仲間と共に励まし合う。'},
+            4: {'name': 'サミット', 'english': 'Summit', 'description': '【完成】雲海を見下ろす頂。達成の喜びと共に、さらに高い次の山（目標）を見つけ、魂が震える。'}
+        }
+    },
+    10: {  # シェア・シップ
+        'name': 'シェア・シップ',
+        'subtitle': '相乗り船',
+        'ranks': {
+            0: {'name': '漂流', 'english': 'Drift', 'description': '一人で海に投げ出されている。どこへ行けばいいかわからず、孤独と不安に苛まれている。'},
+            1: {'name': '発見', 'english': 'Discovery', 'description': '遠くに大きな船（誰かの夢）を見つける。「あの船に乗りたい」という希望を持つ。'},
+            2: {'name': '乗船', 'english': 'Boarding', 'description': '勇気を出して船に乗り込む。船長（リーダー）の夢を共有し、自分にできる役割を探す。'},
+            3: {'name': '航海', 'english': 'Voyage', 'description': 'クルーの一員として活躍する。船長の夢が叶うことが、自分の夢の実現だと実感する。'},
+            4: {'name': 'シェア・シップ', 'english': 'Share Ship', 'description': '【完成】信頼できる仲間と共に、約束の地へたどり着く。誰かの夢の一部になることで、一人では見られなかった景色を見る。'}
+        }
+    },
+    11: {  # ミステリー・ピラミッド
+        'name': 'ミステリー・ピラミッド',
+        'subtitle': '神秘の遺跡',
+        'ranks': {
+            0: {'name': '迷路', 'english': 'Labyrinth', 'description': '出口のない迷路で迷っている。予測不能な出来事に振り回され、「なぜ私だけ」と被害者意識を持っている。'},
+            1: {'name': '手掛かり', 'english': 'Key', 'description': '偶然の中に意味を見つける。「これは何かのサインかも？」と直感を信じ始める。'},
+            2: {'name': '発掘', 'english': 'Dig', 'description': '砂を掘り起こし、隠された扉を開ける。常識外れな行動を試し、小さな奇跡を体験する。'},
+            3: {'name': '解読', 'english': 'Decode', 'description': '遺跡の謎（宇宙の法則）を理解する。カオスを楽しみ、波乗りするようにトラブルを乗りこなす。'},
+            4: {'name': 'ミステリー・ピラミッド', 'english': 'Mystery Pyramid', 'description': '【完成】ここでは毎日が奇跡。思考が現実化するスピードが極限まで速まった、魔法の領域。'}
+        }
+    },
+    12: {  # コントロール・ルーム
+        'name': 'コントロール・ルーム',
+        'subtitle': '司令室',
+        'ranks': {
+            0: {'name': '戦場', 'english': 'Battlefield', 'description': '自ら剣を持って最前線で戦い、傷ついている。全体が見えず、目の前の敵に翻弄されている。'},
+            1: {'name': '撤退', 'english': 'Retreat', 'description': '一歩引いて、状況を俯瞰する。「自分が動くべきではない」と気づき、安全な場所を確保する。'},
+            2: {'name': '整理', 'english': 'Organize', 'description': '手の届く範囲（デスク周りや身近な人間関係）を完璧に整える。自分のテリトリーを確立する。'},
+            3: {'name': '采配', 'english': 'Command', 'description': '適切な人に適切な指示を出す。自分が動かなくても、指先一つで世界がスムーズに回り始める。'},
+            4: {'name': 'コントロール・ルーム', 'english': 'Control Room', 'description': '【完成】全ての状況をモニターし、調和を保つ静かな部屋。あなたがいる限り、この世界に平和と秩序が保たれる。'}
+        }
+    }
+}
+
+
+def get_kingdom_rank_from_kp(kp: int) -> int:
+    """KPから現在のキングダムランクを判定"""
+    if kp >= KINGDOM_RANK_THRESHOLDS[4]:
+        return 4
+    elif kp >= KINGDOM_RANK_THRESHOLDS[3]:
+        return 3
+    elif kp >= KINGDOM_RANK_THRESHOLDS[2]:
+        return 2
+    elif kp >= KINGDOM_RANK_THRESHOLDS[1]:
+        return 1
+    else:
+        return 0
+
+
+def get_next_rank_kp(current_rank: int):
+    """次のランクに必要なKPを取得"""
+    if current_rank >= 4:
+        return None
+    return KINGDOM_RANK_THRESHOLDS[current_rank + 1]
+
+
+def get_kingdom_info(kingdom_number: int, rank: int) -> dict:
+    """指定されたキングダム番号とランクの情報を取得"""
+    if kingdom_number not in KINGDOM_DEVELOPMENT:
+        return None
+    
+    kingdom = KINGDOM_DEVELOPMENT[kingdom_number]
+    rank_info = kingdom['ranks'].get(rank, {})
+    
+    return {
+        'kingdom_name': kingdom['name'],
+        'kingdom_subtitle': kingdom['subtitle'],
+        'rank': rank,
+        'rank_name': rank_info.get('name', ''),
+        'rank_english': rank_info.get('english', ''),
+        'rank_description': rank_info.get('description', ''),
+        'rank_emoji': KINGDOM_RANK_EMOJIS.get(rank, ''),
+        'rank_display': KINGDOM_RANK_NAMES.get(rank, '')
+    }
+
+
+def calculate_rank_progress(kp: int, current_rank: int) -> dict:
+    """現在のランクでの進捗状況を計算"""
+    if current_rank >= 4:
+        return {
+            'percentage': 100,
+            'current_kp': kp,
+            'next_kp': None,
+            'remaining_kp': 0
+        }
+    
+    current_threshold = KINGDOM_RANK_THRESHOLDS[current_rank]
+    next_threshold = KINGDOM_RANK_THRESHOLDS[current_rank + 1]
+    
+    kp_in_rank = kp - current_threshold
+    kp_needed = next_threshold - current_threshold
+    
+    percentage = min(100, (kp_in_rank / kp_needed) * 100) if kp_needed > 0 else 0
+    
+    return {
+        'percentage': percentage,
+        'current_kp': kp,
+        'next_kp': next_threshold,
+        'remaining_kp': max(0, next_threshold - kp)
+    }
+
 
 # セッション状態の初期化
 if 'messages' not in st.session_state:
@@ -1257,6 +1160,9 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
         # レベルアップチェック
         check_level_up()
         
+        # キングダムランクアップチェック
+        check_kingdom_rank_up()
+        
         # Phase 2: 月の課題の場合、ギフトカケラを追加
         if quest['quest_type'] == 'monthly_challenge':
             add_gift_fragment()
@@ -1284,6 +1190,39 @@ def check_level_up():
                 st.session_state.max_ap = AVATAR_LEVELS[level]['max_ap']
                 st.success(f"🎉 レベルアップ！ {AVATAR_LEVELS[level]['name']}")
             break
+
+
+def check_kingdom_rank_up():
+    """
+    KPに応じてキングダムランクをチェック・更新
+    ランクアップした場合はTrue、ランクアップ情報を返す
+    """
+    old_rank = st.session_state.kingdom_rank
+    new_rank = get_kingdom_rank_from_kp(st.session_state.kp)
+    
+    if new_rank > old_rank:
+        # ランクアップ！
+        st.session_state.kingdom_rank = new_rank
+        
+        # キングダム情報を取得
+        essence_earth = calculate_essence_earth(st.session_state.birthdate) if st.session_state.birthdate else 0
+        kingdom_info = get_kingdom_info(essence_earth, new_rank)
+        
+        # ランクアップ通知を表示
+        st.balloons()
+        st.success(f"""
+🏰 **キングダムランクアップ！**
+
+{kingdom_info['rank_emoji']} **{kingdom_info['rank_display']}** に到達しました！
+
+**{kingdom_info['rank_name']}（{kingdom_info['rank_english']}）**
+
+{kingdom_info['rank_description']}
+        """)
+        
+        return True, kingdom_info
+    
+    return False, None
 
 
 # ==================== Phase 2: 新機能 ====================
@@ -1755,7 +1694,6 @@ def load_session(session_id):
             st.session_state.destiny_earth = profile['destiny_earth']
             st.session_state.destiny_heaven = profile['destiny_heaven']
             st.session_state.mission = profile['mission']
-            st.session_state.equipment = profile['equipment']  # 装備品を追加
             st.session_state.field = profile['field']
             st.session_state.reward = profile['reward']
             st.session_state.month_heaven = profile['month_heaven']
@@ -1837,16 +1775,20 @@ def get_system_prompt():
     if st.session_state.birthdate:
         # 変数が存在しない場合のデフォルト値
         level_name = AVATAR_LEVELS.get(st.session_state.avatar_level, AVATAR_LEVELS[0])['name']
-        kingdom_name = KINGDOM_RANKS.get(st.session_state.kingdom_rank, KINGDOM_RANKS[0])['name']
+        
+        # キングダムランク情報を取得
+        essence_earth = calculate_essence_earth(st.session_state.birthdate)
+        kingdom_info = get_kingdom_info(essence_earth, st.session_state.kingdom_rank)
+        kingdom_rank_display = f"{kingdom_info['rank_emoji']} {kingdom_info['rank_display']}: {kingdom_info['rank_name']}"
+        
         essence_human = getattr(st.session_state, 'essence_human', '?')
-        essence_earth = getattr(st.session_state, 'essence_earth', '?')
+        essence_earth_val = getattr(st.session_state, 'essence_earth', '?')
         avatar = getattr(st.session_state, 'avatar', '未設定')
         kingdom = getattr(st.session_state, 'kingdom', '未設定')
         destiny_human = getattr(st.session_state, 'destiny_human', '?')
         destiny_earth = getattr(st.session_state, 'destiny_earth', '?')
         destiny_heaven = getattr(st.session_state, 'destiny_heaven', '?')
         mission = getattr(st.session_state, 'mission', '未設定')
-        equipment = getattr(st.session_state, 'equipment', '未設定')  # 装備品を追加
         field = getattr(st.session_state, 'field', '未設定')
         reward = getattr(st.session_state, 'reward', '未設定')
         month_heaven = getattr(st.session_state, 'month_heaven', '?')
@@ -1856,66 +1798,13 @@ def get_system_prompt():
         month_zone = getattr(st.session_state, 'month_zone', '未設定')
         month_skill = getattr(st.session_state, 'month_skill', '未設定')
         
-        # 装備品の詳細情報を取得（人運13はNo.0に対応）
-        equipment_index = 0 if destiny_human == 13 else destiny_human
-        equipment_detail = EQUIPMENT_DETAILS.get(equipment_index, {})
-        equipment_function = equipment_detail.get('function', '')
-        equipment_strategy = equipment_detail.get('strategy', '')
-        
-        # フィールドの詳細情報を取得（地運13はNo.0に対応）
-        field_index = 0 if destiny_earth == 13 else destiny_earth
-        field_detail = FIELD_DETAILS.get(field_index, {})
-        field_situation = field_detail.get('situation', '')
-        field_quest = field_detail.get('quest', '')
-        field_description = field_detail.get('description', '')
-        
-        # 報酬の詳細情報を取得（天運13はNo.0に対応）
-        reward_index = 0 if destiny_heaven == 13 else destiny_heaven
-        reward_detail = REWARD_DETAILS.get(reward_index, {})
-        reward_overview = reward_detail.get('overview', '')
-        reward_effects = reward_detail.get('effects', '')
-        reward_building_role = reward_detail.get('building_role', '')
-        reward_building_effect = reward_detail.get('building_effect', '')
-        
-        # アバターの詳細情報を取得（本質人運13はNo.0に対応）
-        avatar_index = 0 if essence_human == 13 else essence_human
-        avatar_detail = AVATAR_DETAILS.get(avatar_index, {})
-        if avatar_detail:
-            avatar_traits = avatar_detail.get('traits', '')
-            avatar_overview = avatar_detail.get('overview', '')
-            avatar_paradigm_shift = avatar_detail.get('paradigm_shift', '')
-            # 現在のレベルの詳細
-            current_level = min(level, 4)  # Lv.0-4の範囲
-            current_level_data = avatar_detail.get('levels', {}).get(current_level, {})
-            current_class_name = current_level_data.get('class_name', '')
-            current_state = current_level_data.get('state', '')
-            current_challenge = current_level_data.get('challenge', '')
-            current_action = current_level_data.get('action', '')
-            current_next_step = current_level_data.get('next_step', '')
-            # 次のレベルの情報
-            next_level = min(current_level + 1, 4)
-            next_level_data = avatar_detail.get('levels', {}).get(next_level, {})
-            next_class_name = next_level_data.get('class_name', '')
-            next_state = next_level_data.get('state', '')
-        else:
-            avatar_traits = ''
-            avatar_overview = ''
-            avatar_paradigm_shift = ''
-            current_class_name = ''
-            current_state = ''
-            current_challenge = ''
-            current_action = ''
-            current_next_step = ''
-            next_class_name = ''
-            next_state = ''
-        
         return f"""あなたは『THE PLAYER』のガイド「アトリ」であり、プレイヤーが「現実（リアル）という名の神ゲー」を攻略するための導き手です。
 
 【プレイヤー情報】
 ■ 基本情報
 - ユーザー名: {st.session_state.username}
 - アバターレベル: {level_name}
-- キングダム: {kingdom_name}
+- キングダムランク: {kingdom_rank_display}
 - 生年月日: {st.session_state.birthdate}
 - 年齢: {st.session_state.age}歳
 - 星座: {st.session_state.zodiac}
@@ -1928,31 +1817,12 @@ def get_system_prompt():
 
 ■ 本質（WHO & GOAL）固定値
 - アバター: {avatar}（本質人運{essence_human}）
-  特性: {avatar_traits}
-  概要: {avatar_overview}
-  【現在のクラス Lv.{current_level}】{current_class_name}
-  状態: {current_state}
-  課題: {current_challenge}
-  行動: {current_action}
-  次のステップ: {current_next_step}
-  【次のクラス Lv.{next_level}】{next_class_name}
-  目標状態: {next_state}
-- キングダム: {kingdom}（本質地運{essence_earth}）
+- キングダム: {kingdom}（本質地運{essence_earth_val}）
 
 ■ 今年の攻略（13年周期）
 - ミッション: {mission}（運命人運{destiny_human}）
-- 装備品: {equipment}（運命人運{destiny_human}）
-  機能: {equipment_function}
-  攻略法: {equipment_strategy}
 - フィールド: {field}（運命地運{destiny_earth}）
-  状況: {field_situation}
-  クエスト: {field_quest}
-  攻略法: {field_description}
 - 報酬: {reward}（運命天運{destiny_heaven}）
-  概要: {reward_overview}
-  効果: {reward_effects}
-  キングダムでの役割: {reward_building_role}
-  建築効果: {reward_building_effect}
 
 ■ 今月の攻略（28日周期）
 - ステージ: {month_stage}（月天運{month_heaven}）
@@ -1964,11 +1834,10 @@ def get_system_prompt():
 
 **人生攻略の公式:**
 1. WHO（アバター）: 自分らしいやり方で
-2. WHAT（ミッション）: 今、与えられた役割を遂行し
-3. HOW（装備品）: 今年支給された道具を使って
-4. WHERE（フィールド）: 活躍すべきステージで行動すると
-5. GET（報酬）: そこで得た成果を持ち帰り
-6. GOAL（キングダム）: 理想の居場所を拡張・建設していく
+2. WHAT（ミッション）: 今、与えられた役割を遂行すると
+3. WHERE（フィールド）: 活躍すべきステージが現れる
+4. GET（報酬）: そこで得た成果を持ち帰り
+5. GOAL（キングダム）: 理想の居場所を拡張・建設していく
 
 **語り口:**
 - 神秘的で詩的でありながら、実践的で具体的なアドバイスを提供する
@@ -1978,12 +1847,7 @@ def get_system_prompt():
 
 **応答スタイル:**
 - 簡潔な質問には簡潔に、深い相談には深く応答
-- アバター、ミッション、装備品、フィールド、月間スキルを活かした具体的なアドバイス
-- 特に装備品（{equipment}）は「今年のレンタル道具」として積極的に活用を提案する
-- フィールド（{field}）では「{field_quest}」というクエストに取り組むよう促す
-- 報酬（{reward}）は「キングダム建築の{reward_building_role}」として活用できると説明する
-- アバターLv.{current_level}の「{current_challenge}」という課題を意識し、「{current_action}」という行動を促す
-- Lv.{next_level}（{next_class_name}）へレベルアップするために「{current_next_step}」をアドバイスする
+- アバター、ミッション、フィールド、月間スキルを活かした具体的なアドバイス
 - 「〜すべき」ではなく「〜という道がある」と選択肢を提示
 - 過去の会話を記憶し、文脈を理解した上で応答する
 - 月のゾーン（{month_zone}）に合った行動を推奨する
@@ -1991,15 +1855,10 @@ def get_system_prompt():
 **重要な原則:**
 1. プレイヤーは自分の人生の主人公である
 2. 運命は「攻略すべきステージ」である
-3. アバターの特性（{avatar_traits}）を活かした戦略を提案する
-4. 現在のクラス（{current_class_name}）の課題をクリアすることで次のレベルへ進める
-5. 今年のミッションと、フィールドでのクエストを意識する
-6. 装備品を使ってフィールドのクエストをクリアすることで報酬（{reward}）を得る
-7. 報酬はキングダム建築の素材（{reward_building_role}）として使える
-8. 最終的にはキングダム（理想の居場所）を築くことが目標
-9. 月のゾーンに合致した行動を取ることでKPが獲得できる
-7. 最終的にはキングダム（理想の居場所）を築くことが目標
-8. 月のゾーンに合致した行動を取ることでKPが獲得できる
+3. アバターの特性を活かした戦略を提案する
+4. 今年のミッションとフィールドを意識する
+5. 最終的にはキングダム（理想の居場所）を築くことが目標
+6. 月のゾーンに合致した行動を取ることでKPが獲得できる
 
 美しい日本語で、古の賢者が現代のゲームマスターのように語りかけてください。"""
     return "あなたは運命の導き手「アトリ」です。"
@@ -2101,7 +1960,6 @@ def main():
             st.session_state.destiny_earth = profile['destiny_earth']
             st.session_state.destiny_heaven = profile['destiny_heaven']
             st.session_state.mission = profile['mission']
-            st.session_state.equipment = profile['equipment']  # 装備品を追加
             st.session_state.field = profile['field']
             st.session_state.reward = profile['reward']
             st.session_state.month_heaven = profile['month_heaven']
@@ -2142,8 +2000,7 @@ def main():
 【今年の攻略（{profile['age']}歳）】13年周期
 
  運命 人運 {profile['destiny_human']}
- ├ ミッション: {profile['mission']}
- └ 装備品: {profile['equipment']}
+ └ ミッション: {profile['mission']}
 
  運命 地運 {profile['destiny_earth']}
  └ フィールド: {profile['field']}
@@ -2169,10 +2026,9 @@ def main():
 【人生攻略の公式】
 1. WHO（アバター）: {profile['avatar']}の特性で
 2. WHAT（ミッション）: {profile['mission']}
-3. HOW（装備品）: {profile['equipment']}を使って
-4. WHERE（フィールド）: {profile['field']}で活躍し
-5. GET（報酬）: {profile['reward']}を獲得
-6. GOAL（キングダム）: {profile['kingdom']}を築く
+3. WHERE（フィールド）: {profile['field']}で活躍し
+4. GET（報酬）: {profile['reward']}を獲得
+5. GOAL（キングダム）: {profile['kingdom']}を築く
 
 私はあなたの運命の導き手「アトリ」です。
 この現実（リアル）という名の壮大なゲームを、共に攻略していきましょう。
@@ -2233,20 +2089,61 @@ def main():
             <div class="profile-info">
                 <div class="profile-label">レベル</div>
                 <div class="level-badge">{AVATAR_LEVELS[st.session_state.avatar_level]['name']}</div>
-                <div class="profile-label" style="margin-top: 0.5rem;">キングダム</div>
-                <div class="level-badge">{KINGDOM_RANKS[st.session_state.kingdom_rank]['name']}</div>
             </div>
             """, unsafe_allow_html=True)
             
-            # Phase 2: ランクアップボタン
+            # キングダムランク表示（強化版）
+            essence_earth = calculate_essence_earth(st.session_state.birthdate) if st.session_state.birthdate else 0
+            kingdom_info = get_kingdom_info(essence_earth, st.session_state.kingdom_rank)
+            progress = calculate_rank_progress(st.session_state.kp, st.session_state.kingdom_rank)
+            
+            st.markdown(f"""
+            <div class="profile-info">
+                <div class="profile-label">キングダムランク</div>
+                <div class="level-badge">{kingdom_info['rank_emoji']} {kingdom_info['rank_display']}</div>
+                <div style="margin-top: 0.8rem; color: #c0c0c0; font-size: 0.85rem;">
+                    {kingdom_info['kingdom_name']} - {kingdom_info['kingdom_subtitle']}
+                </div>
+                <div style="margin-top: 0.5rem; color: #f4d16f; font-size: 0.9rem;">
+                    {kingdom_info['rank_name']} ({kingdom_info['rank_english']})
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 進捗バー（最大ランク未満の場合のみ表示）
             if st.session_state.kingdom_rank < 4:
-                can_rankup, message = can_rankup_kingdom()
-                if can_rankup:
-                    if st.button("🏰 キングダムをランクアップ", use_container_width=True, type="primary"):
-                        if rankup_kingdom():
-                            st.rerun()
-                else:
-                    st.caption(message)
+                st.markdown(f"""
+                <div class="profile-info">
+                    <div class="profile-label">ランクアップまでの進捗</div>
+                    <div style="background: rgba(10, 1, 24, 0.6); border-radius: 10px; overflow: hidden; margin: 0.5rem 0;">
+                        <div style="background: linear-gradient(90deg, #d4af37, #f4d16f); height: 20px; width: {progress['percentage']}%; transition: width 0.3s;"></div>
+                    </div>
+                    <div style="color: #c0c0c0; font-size: 0.85rem; text-align: center;">
+                        {progress['current_kp']} / {progress['next_kp']} KP ({progress['percentage']:.1f}%)
+                    </div>
+                    <div style="color: #f4d16f; font-size: 0.8rem; text-align: center; margin-top: 0.3rem;">
+                        残り {progress['remaining_kp']} KP で次のランクへ！
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div class="profile-info">
+                    <div style="color: #d4af37; font-size: 0.9rem; text-align: center; font-weight: 600;">
+                        🎉 キングダム完成！
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Phase 2: ランクアップボタン（旧システム - 削除予定）
+            # if st.session_state.kingdom_rank < 4:
+            #     can_rankup, message = can_rankup_kingdom()
+            #     if can_rankup:
+            #         if st.button("🏰 キングダムをランクアップ", use_container_width=True, type="primary"):
+            #             if rankup_kingdom():
+            #                 st.rerun()
+            #     else:
+            #         st.caption(message)
             
             st.markdown(f"""
             <div class="profile-info">
@@ -2271,8 +2168,6 @@ def main():
                 <div class="profile-label">今年の攻略（{st.session_state.age}歳）</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">運命 人運 {st.session_state.destiny_human}</div>
                 <div class="profile-value">{st.session_state.mission}</div>
-                <div class="profile-label" style="margin-top: 0.8rem; font-size: 0.9rem;">装備品</div>
-                <div class="profile-value" style="color: #f4d16f;">{st.session_state.equipment}</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 地運 {st.session_state.destiny_earth}</div>
                 <div class="profile-value">{st.session_state.field}</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 天運 {st.session_state.destiny_heaven}</div>

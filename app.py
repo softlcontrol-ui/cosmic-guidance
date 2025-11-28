@@ -3318,26 +3318,6 @@ def main():
         
         # ========== 新しいチャットベースUI ==========
         
-        # チャット履歴の表示
-        st.markdown("### 💬 アトリとの対話")
-        
-        # メッセージ履歴を表示
-        chat_container = st.container()
-        with chat_container:
-            for i, message in enumerate(st.session_state.messages):
-                if message["role"] == "user":
-                    # ユーザーメッセージ
-                    ap_cost = message.get('ap_cost', 0)
-                    cost_display = f" **[-{ap_cost} AP]**" if ap_cost > 0 else ""
-                    st.markdown(f"**🧑 あなた**{cost_display}")
-                    st.markdown(f"> {message['content']}")
-                    st.markdown("")
-                else:
-                    # アトリのメッセージ
-                    st.markdown(f"**✨ アトリ**")
-                    st.markdown(message['content'])
-                    st.markdown("")
-        
         # YESボタンの表示（pending_questがある場合）
         if st.session_state.get('waiting_for_yes', False) and st.session_state.pending_quest:
             st.markdown("---")

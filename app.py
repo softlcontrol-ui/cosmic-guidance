@@ -3340,20 +3340,37 @@ def main():
         
         # 最新メッセージへのスクロール（アンカー）
         if len(st.session_state.messages) > 0:
+            # スクロールが必要な場合のみJavaScriptを実行
+            should_scroll = st.session_state.get('should_scroll', False)
+            
             st.markdown("""
             <div id="latest-message" style="height: 1px;"></div>
-            <script>
-                // ページ読み込み後に最新メッセージまでスクロール
-                window.addEventListener('load', function() {
+            """, unsafe_allow_html=True)
+            
+            if should_scroll:
+                # スクロール実行
+                st.markdown("""
+                <script>
+                    // すぐにスクロール実行
                     setTimeout(function() {
                         const element = document.getElementById('latest-message');
                         if (element) {
-                            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            element.scrollIntoView({ behavior: 'smooth', block: 'end' });
                         }
-                    }, 300);
-                });
-            </script>
-            """, unsafe_allow_html=True)
+                    }, 100);
+                    
+                    // 念のため再度実行
+                    setTimeout(function() {
+                        const element = document.getElementById('latest-message');
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }
+                    }, 500);
+                </script>
+                """, unsafe_allow_html=True)
+                
+                # フラグをリセット
+                st.session_state.should_scroll = False
         
         # YESボタンの表示（pending_questがある場合）
         if st.session_state.get('waiting_for_yes', False) and st.session_state.pending_quest:
@@ -3388,6 +3405,7 @@ def main():
                         
                         st.session_state.pending_quest = None
                         st.session_state.waiting_for_yes = False
+                        st.session_state.should_scroll = True  # スクロールフラグ
                         save_to_supabase()
                         st.rerun()
             
@@ -3401,6 +3419,7 @@ def main():
                     
                     st.session_state.pending_quest = None
                     st.session_state.waiting_for_yes = False
+                    st.session_state.should_scroll = True  # スクロールフラグ
                     save_to_supabase()
                     st.rerun()
         
@@ -3539,6 +3558,9 @@ Atori:"""
                             }
                             st.session_state.waiting_for_yes = True
                         
+                        # 自動スクロールフラグをON
+                        st.session_state.should_scroll = True
+                        
                         # 保存
                         save_to_supabase()
                         st.rerun()
@@ -3635,6 +3657,7 @@ AIがあなたの報告内容を分析し、今月のZONE制約に適った行�
                                 "content": f"素晴らしい行動でした！\n\n獲得報酬:\n- ⚡ AP: +{ap_reward}\n- 🏰 KP: +{kp_reward}\n- ✨ EXP: +{exp_reward}"
                             })
                             
+                            st.session_state.should_scroll = True  # スクロールフラグ
                             save_to_supabase()
                             
                             st.rerun()

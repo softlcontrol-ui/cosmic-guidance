@@ -3338,6 +3338,23 @@ def main():
                     st.markdown(message['content'])
                     st.markdown("")
         
+        # 最新メッセージへのスクロール（アンカー）
+        if len(st.session_state.messages) > 0:
+            st.markdown("""
+            <div id="latest-message" style="height: 1px;"></div>
+            <script>
+                // ページ読み込み後に最新メッセージまでスクロール
+                window.addEventListener('load', function() {
+                    setTimeout(function() {
+                        const element = document.getElementById('latest-message');
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }, 300);
+                });
+            </script>
+            """, unsafe_allow_html=True)
+        
         # YESボタンの表示（pending_questがある場合）
         if st.session_state.get('waiting_for_yes', False) and st.session_state.pending_quest:
             st.markdown("---")

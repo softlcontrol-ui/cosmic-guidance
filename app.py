@@ -2728,6 +2728,24 @@ def login_page():
 
 # メインアプリ
 def main():
+    # スクロール制御用のグローバルCSS
+    st.markdown("""
+    <style>
+        /* スムーズスクロールを有効化 */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* チャット入力時のスクロール位置を保持 */
+        .stChatInput {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            z-index: 100;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # ログインチェック
     if not st.session_state.username:
         login_page()
@@ -3348,24 +3366,36 @@ def main():
             """, unsafe_allow_html=True)
             
             if should_scroll:
-                # スクロール実行
+                # スクロール実行（複数回実行で確実に）
                 st.markdown("""
                 <script>
-                    // すぐにスクロール実行
-                    setTimeout(function() {
+                    // 複数のタイミングでスクロール実行
+                    function scrollToLatest() {
                         const element = document.getElementById('latest-message');
                         if (element) {
                             element.scrollIntoView({ behavior: 'smooth', block: 'end' });
                         }
-                    }, 100);
+                    }
                     
-                    // 念のため再度実行
-                    setTimeout(function() {
-                        const element = document.getElementById('latest-message');
-                        if (element) {
-                            element.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                        }
-                    }, 500);
+                    // 即座に実行
+                    scrollToLatest();
+                    
+                    // 複数のタイミングで再実行
+                    setTimeout(scrollToLatest, 50);
+                    setTimeout(scrollToLatest, 100);
+                    setTimeout(scrollToLatest, 200);
+                    setTimeout(scrollToLatest, 300);
+                    setTimeout(scrollToLatest, 500);
+                    setTimeout(scrollToLatest, 800);
+                    setTimeout(scrollToLatest, 1000);
+                    
+                    // DOMContentLoaded後にも実行
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', scrollToLatest);
+                    }
+                    
+                    // load後にも実行
+                    window.addEventListener('load', scrollToLatest);
                 </script>
                 """, unsafe_allow_html=True)
                 
@@ -3482,6 +3512,9 @@ def main():
             )
             
             if user_input:
+                # スクロールフラグを事前に設定
+                st.session_state.should_scroll = True
+                
                 # AP消費判定
                 if st.session_state.active_quest:
                     # 途中相談

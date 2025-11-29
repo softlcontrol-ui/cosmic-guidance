@@ -3506,32 +3506,32 @@ def main():
                 st.error(f"⚠️ APが不足しています（必要: {required_ap} AP、所持: {st.session_state.ap} AP）")
             
             # チャット入力
-            user_input = st.chat_input(
-                "相談内容を入力（-1 AP）/ 「月の課題」と入力（-2 AP）" if not st.session_state.active_quest else "途中相談する（-1 AP）...",
-                disabled=st.session_state.ap < required_ap
-            )
-            
-            if user_input:
-                # スクロールフラグを事前に設定
-                st.session_state.should_scroll = True
-                
-                # AP消費判定
-                if st.session_state.active_quest:
-                    # 途中相談
-                    cost = 1
-                    consultation_type = 'followup'
-                else:
-                    # 新規相談 or 月の課題
-                    if is_monthly_challenge_request(user_input):
-                        cost = 2
-                        consultation_type = 'monthly'
-                    else:
-                        cost = 1
-                        consultation_type = 'consultation'
-                
-                # AP消費
-                st.session_state.ap -= cost
-                st.session_state.last_ap_cost = cost
+user_input = st.chat_input(
+    "相談内容を入力(-1 AP)/ 「月の課題」と入力(-2 AP)" if not st.session_state.active_quest else "途中相談する(-1 AP)...",
+    disabled=st.session_state.ap < required_ap
+)
+
+if user_input:
+    # スクロールフラグを事前に設定
+    st.session_state.should_scroll = True
+    
+    # APコスト判定
+    if st.session_state.active_quest:
+        # 途中相談
+        cost = 1
+        consultation_type = 'followup'
+    else:
+        # 新規相談 or 月の課題
+        if is_monthly_challenge_request(user_input):
+            cost = 2
+            consultation_type = 'monthly'
+        else:
+            cost = 1
+            consultation_type = 'consultation'
+    
+    # AP消費
+    st.session_state.ap -= cost
+    st.session_state.last_ap_cost = cost
                 
                 # 途中相談の場合、カウントをインクリメント
                 if consultation_type == 'followup':
@@ -3717,3 +3717,4 @@ if __name__ == "__main__":
         © 2024 THE PLAYER - Powered by Google Gemini AI
     </footer>
     """, unsafe_allow_html=True)
+

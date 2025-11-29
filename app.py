@@ -3505,7 +3505,7 @@ def main():
             if st.session_state.ap < required_ap:
                 st.error(f"⚠️ APが不足しています（必要: {required_ap} AP、所持: {st.session_state.ap} AP）")
             
-            # チャット入力
+# チャット入力
 user_input = st.chat_input(
     "相談内容を入力(-1 AP)/ 「月の課題」と入力(-2 AP)" if not st.session_state.active_quest else "途中相談する(-1 AP)...",
     disabled=st.session_state.ap < required_ap
@@ -3532,78 +3532,79 @@ if user_input:
     # AP消費
     st.session_state.ap -= cost
     st.session_state.last_ap_cost = cost
-                
-                # 途中相談の場合、カウントをインクリメント
-                if consultation_type == 'followup':
-                    increment_followup_count(st.session_state.active_quest['id'])
-                
-                # ユーザーメッセージを追加（AP消費情報付き）
-                st.session_state.messages.append({
-                    "role": "user",
-                    "content": user_input,
-                    "ap_cost": cost
-                })
-                
-                # プレイヤーステータスを保存
-                save_player_status()
-                
-                # AIに送信
-                with st.spinner("🌌 宇宙と対話中..."):
-                    try:
-                        # システムプロンプトを取得
-                        system_prompt = get_system_prompt()
-                        
-                        # 会話履歴を構築
-                        conversation = []
-                        for msg in st.session_state.messages:
-                            conversation.append(f"{'User' if msg['role'] == 'user' else 'Atori'}: {msg['content']}")
-                        
-                        # プロンプト作成
-                        full_prompt = f"""{system_prompt}
+    
+    # 途中相談の場合、カウントをインクリメント
+    if consultation_type == 'followup':
+        increment_followup_count(st.session_state.active_quest['id'])
+    
+    # ユーザーメッセージを追加(AP消費情報付き)
+    st.session_state.messages.append({
+        "role": "user",
+        "content": user_input,
+        "ap_cost": cost
+    })
+    
+    # プレイヤーステータスを保存
+    save_player_status()
+    
+    # AIに送信
+    with st.spinner("🌌 宇宙と対話中..."):
+        try:
+            # システムプロンプトを取得
+            system_prompt = get_system_prompt()
+            
+            # 会話履歴を構築
+            conversation = []
+            for msg in st.session_state.messages:
+                conversation.append(f"{'User' if msg['role'] == 'user' else 'Atori'}: {msg['content']}")
+            
+            # プロンプト作成
+            full_prompt = f"""{system_prompt}
 
 【会話履歴】
 {chr(10).join(conversation)}
 
 Atori:"""
-                        
-                        # AI応答を生成
-                        response = model.generate_content(full_prompt)
-                        ai_response = response.text
-                        
-                        # メッセージを追加
-                        st.session_state.messages.append({
-                            "role": "assistant",
-                            "content": ai_response
-                        })
-                        
-                        # クエスト提案の検出
-                        if ("受注しますか" in ai_response or "実行しますか" in ai_response) and not st.session_state.active_quest:
-                            # pending_questを作成
-                            quest_type = 'monthly_challenge' if consultation_type == 'monthly' else 'consultation'
-                            quest_title = extract_quest_title(ai_response)
-                            
-                            st.session_state.pending_quest = {
-                                'type': quest_type,
-                                'title': quest_title,
-                                'description': user_input,
-                                'advice': ai_response,
-                                'initial_cost': cost
-                            }
-                            st.session_state.waiting_for_yes = True
-                        
-                        # 自動スクロールフラグをON
-                        st.session_state.should_scroll = True
-                        
-                        # 保存
-                        save_to_supabase()
-                        st.rerun()
-                        
-                    except Exception as e:
-                        st.error(f"エラー: {e}")
-                        # エラー時はAP返還
-                        st.session_state.ap += cost
-                        st.session_state.messages.pop()  # 最後のメッセージを削除
-                        save_player_status()
+            
+            # AI応答を生成
+            response = model.generate_content(full_prompt)
+            ai_response = response.text
+            
+            # メッセージを追加
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": ai_response
+            })
+            
+            # クエスト提案の検出
+            if ("受注しますか" in ai_response or "実行しますか" in ai_response) and not st.session_state.active_quest:
+                # pending_questを作成
+                quest_type = 'monthly_challenge' if consultation_type == 'monthly' else 'consultation'
+                quest_title = extract_quest_title(ai_response)
+                
+                st.session_state.pending_quest = {
+                    'type': quest_type,
+                    'title': quest_title,
+                    'description': user_input,
+                    'advice': ai_response,
+                    'initial_cost': cost
+                }
+                st.session_state.waiting_for_yes = True
+            
+            # 保存
+            save_to_supabase()
+            
+            # rerun 前に少し待機(JavaScriptが実行される時間を確保)
+            time.sleep(0.1)
+            
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"エラー: {e}")
+            # エラー時はAP返還
+            st.session_state.ap += cost
+            st.session_state.messages.pop()  # 最後のメッセージを削除
+            save_player_status()
         
         # 報告フォーム
         if st.session_state.get('show_report_form', False) and st.session_state.active_quest:

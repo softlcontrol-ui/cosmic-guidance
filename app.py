@@ -3598,12 +3598,28 @@ Atori:"""
                         'advice': ai_response,
                         'initial_cost': cost
                     }
-                    st.sessio
-        
-        # 報告フォーム
-        if st.session_state.get('show_report_form', False) and st.session_state.active_quest:
-            st.markdown("---")
-            st.markdown("### 📝 行動報告")
+                    st.session_state.waiting_for_yes = True
+                
+                # 保存
+                save_to_supabase()
+                
+                # rerun 前に少し待機(JavaScriptが実行される時間を確保)
+                time.sleep(0.1)
+                
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"エラー: {e}")
+                # エラー時はAP返還
+                st.session_state.ap += cost
+                st.session_state.messages.pop()  # 最後のメッセージを削除
+                save_player_status()
+
+# ここから報告フォームのコード
+# 報告フォーム
+if st.session_state.get('show_report_form', False) and st.session_state.active_quest:
+    st.markdown("---")
+    st.markdown("### 📝 行動報告")
             
             report_text = st.text_area(
                 "何を行動しましたか？",

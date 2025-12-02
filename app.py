@@ -2643,7 +2643,7 @@ def configure_gemini(enable_search=False, enable_thinking=False):
         config_params["tools"] = tools
     
     # モデル名を決定
-    model_name = "gemini-1.5-pro" if (enable_search or enable_thinking) else "gemini-2.5-flash"
+    model_name = "gemini-1.5-pro-002" if (enable_search or enable_thinking) else "gemini-2.5-flash"
     
     return client, model_name, config_params, system_prompt
 

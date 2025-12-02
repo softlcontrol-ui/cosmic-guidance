@@ -2636,13 +2636,14 @@ def configure_gemini(enable_search=False, enable_thinking=False):
         "max_output_tokens": 2048,
     }
     
-    if enable_thinking:
-        config_params["thinking_config"] = types.ThinkingConfig(thinking_level="HIGH")
+    # Thinking機能は現在のモデルでは非対応のため無効化
+    # if enable_thinking:
+    #     config_params["thinking_config"] = types.ThinkingConfig(thinking_level="HIGH")
     
     if tools:
         config_params["tools"] = tools
     
-    # モデル名を決定
+    # モデル名を統一（すべて gemini-2.5-flash）
     model_name = "gemini-2.5-flash"
     
     return client, model_name, config_params, system_prompt

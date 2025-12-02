@@ -837,55 +837,73 @@ def get_month_skill_detail(skill_num):
 # アバターレベル定義
 # ==================== Phase 4: アバターレベルシステム（EXPベース）====================
 
-# レベル定義（より戦略的な成長曲線）
+# レベル定義（階級と特殊能力システム Ver. 5.1）
 AVATAR_LEVELS = {
     0: {
         "name": "Lv.0 NPC（眠れる村人）",
         "english": "NPC - Sleeping Villager",
+        "class_name": "NPC",
         "max_ap": 10,
         "exp_required": 0,
         "coin_reward": 0,
-        "description": "まだ目覚めていない、普通の人。現実をゲームとして認識していない状態。"
+        "description": "まだ目覚めていない、普通の人。現実をゲームとして認識していない状態。",
+        "perks": [],
+        "perk_description": "【なし】目の前の運命（1つのクエスト）をこなすだけで精一杯の状態。"
     },
     1: {
         "name": "Lv.1 TRIAL（試練の挑戦者）",
         "english": "TRIAL - Challenger",
+        "class_name": "TRIAL",
         "max_ap": 15,
         "exp_required": 100,
         "coin_reward": 50,
-        "description": "運命の羅針盤を手に入れ、人生をゲームとして攻略し始めた。最初の一歩を踏み出した状態。"
+        "description": "運命の羅針盤を手に入れ、人生をゲームとして攻略し始めた。",
+        "perks": [],
+        "perk_description": "【AP微増】少し体力がつき、連続して行動できるようになる。"
     },
     2: {
         "name": "Lv.2 NOVICE（見習い）",
         "english": "NOVICE - Apprentice",
+        "class_name": "NOVICE",
         "max_ap": 20,
         "exp_required": 300,
         "coin_reward": 100,
-        "description": "クエストをこなし、経験を積んでいる。攻略法が少しずつ見えてきた状態。"
+        "description": "クエストをこなし、経験を積んでいる。攻略法が少しずつ見えてきた状態。",
+        "perks": ["multi_task", "synergy_bonus"],
+        "perk_description": "【マルチタスク解禁】月の課題と通常相談を同時受注可能。同時クリアで獲得KP 1.2倍 + AP回復 +1"
     },
     3: {
         "name": "Lv.3 ADEPT（熟練者）",
         "english": "ADEPT - Expert",
+        "class_name": "ADEPT",
         "max_ap": 30,
         "exp_required": 700,
         "coin_reward": 150,
-        "description": "戦略的に人生を攻略できるようになった。ZONE制約やスキルを使いこなせる状態。"
+        "description": "戦略的に人生を攻略できるようになった。ZONE制約やスキルを使いこなせる状態。",
+        "perks": ["multi_task", "synergy_bonus", "wisdom"],
+        "perk_description": "【熟練の知恵】途中相談が低確率（20%）で無料になる。"
     },
     4: {
         "name": "Lv.4 MASTER（達人）",
         "english": "MASTER - Virtuoso",
+        "class_name": "MASTER",
         "max_ap": 40,
         "exp_required": 1500,
         "coin_reward": 200,
-        "description": "人生の攻略法を体得し、自在に運命を操れるようになった。真のプレイヤーの一歩手前。"
+        "description": "人生の攻略法を体得し、自在に運命を操れるようになった。",
+        "perks": ["multi_task", "synergy_bonus", "wisdom"],
+        "perk_description": "【熟練の知恵】マルチタスク継続。途中相談が低確率で無料。"
     },
     5: {
         "name": "Lv.5 PLAYER（覚醒した主人公）",
         "english": "PLAYER - Awakened Protagonist",
+        "class_name": "PLAYER",
         "max_ap": 50,
         "exp_required": 3000,
         "coin_reward": 300,
-        "description": "完全に目覚めた状態。現実（リアル）という名の神ゲーを、最高難易度で攻略できる真の主人公。"
+        "description": "完全に目覚めた状態。真の主人公。",
+        "perks": ["multi_task", "synergy_bonus", "wisdom", "the_zone"],
+        "perk_description": "【ゾーン状態】AP上限大幅アップ。マルチタスク時のAP消費軽減（-3 → -2）。"
     }
 }
 
@@ -1671,6 +1689,7 @@ Poor
 
 
 def report_quest(quest_id, report_text, zone_evaluation=None):
+    fragment_message = None  # カケラ獲得メッセージ
     """クエストを報告する"""
     if not st.session_state.username:
         return False
@@ -1775,9 +1794,10 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
         # キングダムランクアップチェック
         check_kingdom_rank_up()
         
-        # Phase 2: 月の課題の場合、ギフトカケラを追加
+        # Phase 5: 月の課題の場合、ギフトカケラを追加（確率変動システム）
         if quest['quest_type'] == 'monthly_challenge':
-            add_gift_fragment()
+            fragment_success, fragment_message = add_gift_fragment(ai_evaluation)
+            # メッセージは後で報告完了時に表示
         
         # ステータスを保存
         save_player_status()
@@ -1785,10 +1805,10 @@ def report_quest(quest_id, report_text, zone_evaluation=None):
         # アクティブクエストをクリア
         st.session_state.active_quest = None
         
-        return True, ap_reward, kp_reward, exp_reward, days_elapsed, ai_evaluation
+        return True, ap_reward, kp_reward, exp_reward, days_elapsed, ai_evaluation, fragment_message
     except Exception as e:
         st.error(f"⚠️ 報告エラー: {e}")
-        return False, 0, 0, 0, 0, None
+        return False, 0, 0, 0, 0, None, None
 
 # レベルアップチェック
 def check_level_up():
@@ -2023,13 +2043,45 @@ def load_gifts():
         return False
 
 # ギフトカケラを追加
-def add_gift_fragment():
+def add_gift_fragment(evaluation=None):
     """
-    月の課題クリア時にギフトのカケラを+1
-    5カケラで1ギフト完成 → gifts テーブルに記録
+    Ver. 5.1: カケラ獲得の確率変動システム
+    月の課題クリア時に評価に応じた確率でギフトのカケラを獲得
+    
+    評価ランク別ドロップ率:
+    - Excellent: 100% (確定)
+    - Great: 50% (1/2)
+    - Good: 20% (1/5)
+    - Poor: 0% (獲得なし)
     """
     if not st.session_state.username:
-        return False
+        return False, None
+    
+    # 評価に応じたドロップ率
+    drop_rates = {
+        'Excellent': 1.0,
+        'Great': 0.5,
+        'Good': 0.2,
+        'Poor': 0.0
+    }
+    
+    drop_rate = drop_rates.get(evaluation, 0.2)
+    
+    # ドロップ判定
+    import random
+    drop_success = random.random() < drop_rate
+    
+    if not drop_success:
+        # カケラ獲得失敗
+        message = f"""
+💧 **カケラは落ちませんでした...**
+
+評価: **{evaluation}**（ドロップ率 {int(drop_rate * 100)}%）
+
+次はもっと良い評価を目指しましょう！
+Excellent評価なら確定でカケラを獲得できます。
+"""
+        return False, message
     
     try:
         supabase = get_supabase_client()
@@ -2037,24 +2089,27 @@ def add_gift_fragment():
         # カケラを+1
         st.session_state.gift_fragments += 1
         
+        message = f"""
+✨ **ギフトのカケラを獲得しました！**
+
+評価: **{evaluation}**（ドロップ率 {int(drop_rate * 100)}%）
+現在のカケラ: {st.session_state.gift_fragments} / 5
+
+あと{5 - st.session_state.gift_fragments}個で天運ギフトが完成します。
+"""
+        
         # 5カケラで1ギフト完成
         if st.session_state.gift_fragments >= 5:
-            # カケラをリセット
             st.session_state.gift_fragments = 0
-            
-            # 完成ギフト数を+1
             st.session_state.completed_gifts += 1
             
-            # 今年の天運ギフトを取得
             current_age = st.session_state.age
             current_year = datetime.now().year
             destiny_heaven = st.session_state.destiny_heaven
             
-            # ギフト番号を計算（0-12）
             gift_num = (destiny_heaven - 1) % 13
             gift_detail = YEARLY_GIFT[gift_num]
             
-            # gifts テーブルに記録
             gift_record = {
                 'username': st.session_state.username,
                 'gift_number': gift_num,
@@ -2068,8 +2123,7 @@ def add_gift_fragment():
             
             supabase.table('gifts').insert(gift_record).execute()
             
-            # ギフト完成通知
-            st.success(f"""
+            message = f"""
 🎁 **天運ギフトが完成しました！**
 
 **{gift_detail['name']}（{gift_detail['japanese']}）**
@@ -2083,24 +2137,15 @@ def add_gift_fragment():
 {gift_detail['building_material']}
 
 完成したギフト総数: {st.session_state.completed_gifts}個
-            """)
-            
-            return True, 'gift_completed'
-        else:
-            # カケラ追加の通知
-            st.info(f"""
-✨ **ギフトのカケラを獲得しました！**
-
-現在のカケラ: {st.session_state.gift_fragments} / 5
-
-あと{5 - st.session_state.gift_fragments}個で天運ギフトが完成します。
-            """)
-            
-            return True, 'fragment_added'
-            
+"""
+        
+        save_player_status()
+        return True, message
+        
     except Exception as e:
         st.warning(f"⚠️ ギフト処理エラー: {e}")
-        return False, 'error'
+        return False, None
+
 
 
 def get_user_gifts(include_used=False):
@@ -3505,121 +3550,110 @@ def main():
             if st.session_state.ap < required_ap:
                 st.error(f"⚠️ APが不足しています（必要: {required_ap} AP、所持: {st.session_state.ap} AP）")
             
-# チャット入力欄
-if not st.session_state.get('waiting_for_yes', False):
-    st.markdown("---")
-    
-    # AP不足の警告
-    required_ap = 2 if st.session_state.active_quest is None else 1
-    if st.session_state.ap < required_ap:
-        st.error(f"⚠️ APが不足しています(必要: {required_ap} AP、所持: {st.session_state.ap} AP)")
-    
-    # チャット入力
-    user_input = st.chat_input(
-        "相談内容を入力(-1 AP)/ 「月の課題」と入力(-2 AP)" if not st.session_state.active_quest else "途中相談する(-1 AP)...",
-        disabled=st.session_state.ap < required_ap
-    )
-    
-    if user_input:
-        # スクロールフラグを事前に設定
-        st.session_state.should_scroll = True
-        
-        # APコスト判定
-        if st.session_state.active_quest:
-            # 途中相談
-            cost = 1
-            consultation_type = 'followup'
-        else:
-            # 新規相談 or 月の課題
-            if is_monthly_challenge_request(user_input):
-                cost = 2
-                consultation_type = 'monthly'
-            else:
-                cost = 1
-                consultation_type = 'consultation'
-        
-        # AP消費
-        st.session_state.ap -= cost
-        st.session_state.last_ap_cost = cost
-        
-        # 途中相談の場合、カウントをインクリメント
-        if consultation_type == 'followup':
-            increment_followup_count(st.session_state.active_quest['id'])
-        
-        # ユーザーメッセージを追加(AP消費情報付き)
-        st.session_state.messages.append({
-            "role": "user",
-            "content": user_input,
-            "ap_cost": cost
-        })
-        
-        # プレイヤーステータスを保存
-        save_player_status()
-        
-        # AIに送信
-        with st.spinner("🌌 宇宙と対話中..."):
-            try:
-                # システムプロンプトを取得
-                system_prompt = get_system_prompt()
+            # チャット入力
+            user_input = st.chat_input(
+                "相談内容を入力（-1 AP）/ 「月の課題」と入力（-2 AP）" if not st.session_state.active_quest else "途中相談する（-1 AP）...",
+                disabled=st.session_state.ap < required_ap
+            )
+            
+            if user_input:
+                # スクロールフラグを事前に設定
+                st.session_state.should_scroll = True
                 
-                # 会話履歴を構築
-                conversation = []
-                for msg in st.session_state.messages:
-                    conversation.append(f"{'User' if msg['role'] == 'user' else 'Atori'}: {msg['content']}")
+                # AP消費判定
+                if st.session_state.active_quest:
+                    # 途中相談
+                    cost = 1
+                    consultation_type = 'followup'
+                else:
+                    # 新規相談 or 月の課題
+                    if is_monthly_challenge_request(user_input):
+                        cost = 2
+                        consultation_type = 'monthly'
+                    else:
+                        cost = 1
+                        consultation_type = 'consultation'
                 
-                # プロンプト作成
-                full_prompt = f"""{system_prompt}
+                # AP消費
+                st.session_state.ap -= cost
+                st.session_state.last_ap_cost = cost
+                
+                # 途中相談の場合、カウントをインクリメント
+                if consultation_type == 'followup':
+                    increment_followup_count(st.session_state.active_quest['id'])
+                
+                # ユーザーメッセージを追加（AP消費情報付き）
+                st.session_state.messages.append({
+                    "role": "user",
+                    "content": user_input,
+                    "ap_cost": cost
+                })
+                
+                # プレイヤーステータスを保存
+                save_player_status()
+                
+                # AIに送信
+                with st.spinner("🌌 宇宙と対話中..."):
+                    try:
+                        # システムプロンプトを取得
+                        system_prompt = get_system_prompt()
+                        
+                        # 会話履歴を構築
+                        conversation = []
+                        for msg in st.session_state.messages:
+                            conversation.append(f"{'User' if msg['role'] == 'user' else 'Atori'}: {msg['content']}")
+                        
+                        # プロンプト作成
+                        full_prompt = f"""{system_prompt}
 
 【会話履歴】
 {chr(10).join(conversation)}
 
 Atori:"""
-                
-                # AI応答を生成
-                response = model.generate_content(full_prompt)
-                ai_response = response.text
-                
-                # メッセージを追加
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": ai_response
-                })
-                
-                # クエスト提案の検出
-                if ("受注しますか" in ai_response or "実行しますか" in ai_response) and not st.session_state.active_quest:
-                    # pending_questを作成
-                    quest_type = 'monthly_challenge' if consultation_type == 'monthly' else 'consultation'
-                    quest_title = extract_quest_title(ai_response)
-                    
-                    st.session_state.pending_quest = {
-                        'type': quest_type,
-                        'title': quest_title,
-                        'description': user_input,
-                        'advice': ai_response,
-                        'initial_cost': cost
-                    }
-                    st.session_state.waiting_for_yes = True
-                
-                # 保存
-                save_to_supabase()
-                
-                # rerun 前に少し待機(JavaScriptが実行される時間を確保)
-                time.sleep(0.1)
-                
-                st.rerun()
-                
-            except Exception as e:
-                st.error(f"エラー: {e}")
-                # エラー時はAP返還
-                st.session_state.ap += cost
-                st.session_state.messages.pop()  # 最後のメッセージを削除
-                save_player_status()
-
-# ここから報告フォームのコード
-# 報告フォーム
-if st.session_state.get('show_report_form', False) and st.session_state.active_quest:
-    st.markdown("---")
-    st.markdown("### 📝 行動報告")
+                        
+                        # AI応答を生成
+                        response = model.generate_content(full_prompt)
+                        ai_response = response.text
+                        
+                        # メッセージを追加
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": ai_response
+                        })
+                        
+                        # クエスト提案の検出
+                        if ("受注しますか" in ai_response or "実行しますか" in ai_response) and not st.session_state.active_quest:
+                            # pending_questを作成
+                            quest_type = 'monthly_challenge' if consultation_type == 'monthly' else 'consultation'
+                            quest_title = extract_quest_title(ai_response)
+                            
+                            st.session_state.pending_quest = {
+                                'type': quest_type,
+                                'title': quest_title,
+                                'description': user_input,
+                                'advice': ai_response,
+                                'initial_cost': cost
+                            }
+                            st.session_state.waiting_for_yes = True
+                        
+                        # 自動スクロールフラグをON
+                        st.session_state.should_scroll = True
+                        
+                        # 保存
+                        save_to_supabase()
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"エラー: {e}")
+                        # エラー時はAP返還
+                        st.session_state.ap += cost
+                        st.session_state.messages.pop()  # 最後のメッセージを削除
+                        save_player_status()
+        
+        # 報告フォーム
+        if st.session_state.get('show_report_form', False) and st.session_state.active_quest:
+            st.markdown("---")
+            st.markdown("### 📝 行動報告")
             
             report_text = st.text_area(
                 "何を行動しましたか？",
@@ -3664,7 +3698,7 @@ AIがあなたの報告内容を分析し、今月のZONE制約に適った行�
                         )
                         
                         if result and result[0]:  # success
-                            success, ap_reward, kp_reward, exp_reward, days, ai_eval = result
+                            success, ap_reward, kp_reward, exp_reward, days, ai_eval, fragment_msg = result
                             
                             # AI評価メッセージ
                             eval_message = ""
@@ -3688,6 +3722,10 @@ AIがあなたの報告内容を分析し、今月のZONE制約に適った行�
 経過日数: {days}日
 {'🎉 期限内報告！APが2倍になりました！' if days <= 7 else ''}
                             """)
+                            
+                            # カケラ獲得メッセージを表示
+                            if fragment_msg:
+                                st.info(fragment_msg)
                             
                             st.session_state.show_report_form = False
                             
@@ -3728,4 +3766,3 @@ if __name__ == "__main__":
         © 2024 THE PLAYER - Powered by Google Gemini AI
     </footer>
     """, unsafe_allow_html=True)
-

@@ -1383,7 +1383,7 @@ def load_compass_knowledge_from_github():
         return COMPASS_KNOWLEDGE_CACHE
     
     # ⚠️ このURLを自分のリポジトリのURLに変更してください！
-    github_url = "https://raw.githubusercontent.com/your-username/your-repo/main/data/compass_knowledge_complete.txt"
+    github_url = "https://github.com/softlcontrol-ui/cosmic-guidance/tree/main/data/compass_knowledge_complete.txt"
     
     try:
         print("📚 運命の羅針盤の知識を読み込み中...")

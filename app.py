@@ -5125,7 +5125,7 @@ def main():
  年齢: {profile['age']}歳
  星座: {profile['zodiac']}
  レベル: {AVATAR_LEVELS[st.session_state.avatar_level]['name']}
- キングダム: {KINGDOM_RANKS[st.session_state.kingdom_rank]['name']}
+ キングダム: {KINGDOM_RANK_EMOJIS[st.session_state.kingdom_rank]} {KINGDOM_RANK_NAMES[st.session_state.kingdom_rank]}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

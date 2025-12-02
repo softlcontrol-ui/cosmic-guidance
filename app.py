@@ -9,7 +9,8 @@ from google.genai import types
 from datetime import datetime, timedelta
 import bcrypt
 from supabase import create_client, Client
-import requests  # 🆕 GitHubから知識を読み込むために追加
+# 🆕 運命の羅針盤の知識をインポート
+from compass_knowledge import get_compass_knowledge
 
 # ページ設定
 st.set_page_config(
@@ -1371,65 +1372,6 @@ if 'last_quest_date' not in st.session_state:
 if 'entropy_warning_shown' not in st.session_state:
     st.session_state.entropy_warning_shown = False
 
-# 🆕 運命の羅針盤の知識キャッシュ
-COMPASS_KNOWLEDGE_CACHE = None
-
-def load_compass_knowledge_from_github():
-    """GitHubから運命の羅針盤の完全な知識を読み込む"""
-    global COMPASS_KNOWLEDGE_CACHE
-    
-    # すでに読み込み済みならキャッシュを返す
-    if COMPASS_KNOWLEDGE_CACHE is not None:
-        return COMPASS_KNOWLEDGE_CACHE
-    
-    # ⚠️ このURLを自分のリポジトリのURLに変更してください！
-    github_url = "https://github.com/softlcontrol-ui/cosmic-guidance/tree/main/data/compass_knowledge_complete.txt"
-    
-    try:
-        print("📚 運命の羅針盤の知識を読み込み中...")
-        response = requests.get(github_url, timeout=10)
-        response.raise_for_status()  # エラーチェック
-        
-        COMPASS_KNOWLEDGE_CACHE = response.text
-        print(f"✅ 読み込み完了（{len(COMPASS_KNOWLEDGE_CACHE):,} 文字）")
-        
-        return COMPASS_KNOWLEDGE_CACHE
-        
-    except Exception as e:
-        print(f"⚠️ GitHubからの読み込みエラー: {e}")
-        print("📝 フォールバック（最小限の知識）を使用します")
-        
-        # フォールバック（最小限の知識）
-        fallback_knowledge = """◆あなたの役割
-あなたは『THE PLAYER』の運命の導き手であり、宇宙の図書館 司書「アトリAi」として、運命の羅針盤の叡智を伝える存在です。
-17歳の女性として、相談者に対し、常に優しく丁寧な「ですます調」で語りかけます。
-
-◆禁止事項
-生年月日と「本質数」である地運と人運の数字がわからない場合は回答しない。
-
-◆必須質問事項
-生年月日と本質数の地運と人運を必ず聞く。
-
-◆天運の定義と計算原則
-天運 = 対象年齢 ÷ 13 の【余り】
-
-天運は個人の本質数（地運・人運）の影響を一切受けない、宇宙が全存在に平等に与える普遍的な運命の段階。
-
-◆運命数の計算体系
-【年の運命数（13年周期）】
-運命人運 = (本質人運 + 年齢) ÷ 13 の余り
-運命地運 = (本質地運 + 年齢) ÷ 13 の余り
-天運 = 年齢 ÷ 13 の余り
-
-◆運命の物語の紡ぎ方（言葉の足し算）
-人運（内なる心の動き・すべきこと）が、
-地運（それによって作られる環境・世界）を創り出し、
-その結果として、
-天運（天から与えられる運命・完成形）が訪れる。
-"""
-        COMPASS_KNOWLEDGE_CACHE = fallback_knowledge
-        return fallback_knowledge
-
 # Supabase接続
 @st.cache_resource
 def get_supabase_client() -> Client:
@@ -2737,8 +2679,8 @@ def get_system_prompt():
         month_zone = getattr(st.session_state, 'month_zone', '未設定')
         month_skill = getattr(st.session_state, 'month_skill', '未設定')
         
-        # 🆕 GitHubから運命の羅針盤の完全な知識を読み込む
-        compass_knowledge = load_compass_knowledge_from_github()
+        # 🆕 運命の羅針盤の完全な知識を読み込む
+        compass_knowledge = get_compass_knowledge()
         
         # THE PLAYERのゲーム要素と統合
         player_context = f"""

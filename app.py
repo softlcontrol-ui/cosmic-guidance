@@ -2999,8 +2999,6 @@ def main():
         login_page()
         return
     
-    model = configure_gemini()
-    
     # 初回のみSupabaseから読み込み
     if not st.session_state.supabase_loaded:
         load_from_supabase()
@@ -3798,8 +3796,11 @@ def main():
                 # AIに送信
                 with st.spinner("🌌 宇宙と対話中..."):
                     try:
-                        # システムプロンプトを取得
-                        system_prompt = get_system_prompt()
+                        # 新SDK: クライアント、モデル、設定を取得
+                        client, model_name, config_params, system_prompt = configure_gemini(
+                            enable_search=(consultation_type == 'monthly'),  # 月の課題のみ検索
+                            enable_thinking=(consultation_type == 'monthly')  # 月の課題のみ深い思考
+                        )
                         
                         # 会話履歴を構築
                         conversation = []
@@ -3814,9 +3815,29 @@ def main():
 
 Atori:"""
                         
-                        # AI応答を生成
-                        response = model.generate_content(full_prompt)
-                        ai_response = response.text
+                        # 新SDK: AI応答を生成
+                        from google.genai import types
+                        
+                        # コンテンツ作成
+                        contents = [
+                            types.Content(
+                                role="user",
+                                parts=[types.Part.from_text(text=full_prompt)]
+                            )
+                        ]
+                        
+                        # 設定作成
+                        config = types.GenerateContentConfig(**config_params)
+                        
+                        # ストリーミング応答を収集
+                        ai_response = ""
+                        for chunk in client.models.generate_content_stream(
+                            model=model_name,
+                            contents=contents,
+                            config=config
+                        ):
+                            if hasattr(chunk, 'text'):
+                                ai_response += chunk.text
                         
                         # メッセージを追加
                         st.session_state.messages.append({

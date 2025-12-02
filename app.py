@@ -3127,27 +3127,63 @@ def calculate_destiny_numbers(birthdate_str, age):
     # 運命 地運：年齢 + 本質地運
     destiny_earth = ((age + essence_earth - 1) % 13) + 1
     
-    # 運命 天運：年齢 + 本質人運 + 本質地運
-    destiny_heaven = ((age + essence_human + essence_earth - 1) % 13) + 1
+    # 運命 天運：年齢のみで計算（ドキュメント通り：天運 = 年齢 ÷ 13 の余り）
+    # 天運は個人の本質数（地運・人運）の影響を一切受けない
+    destiny_heaven = age % 13
     
     return destiny_human, destiny_earth, destiny_heaven
 
 def calculate_month_numbers(birthdate_str):
-    """月運を計算（28日周期）- 13段階（0-12）"""
+    """月運を計算（13ヶ月カレンダー・28日周期）
+    
+    ドキュメント仕様:
+    - 誕生日当日は「瞑想日」（カレンダーの外）
+    - 誕生日翌日から「1の月」がスタート
+    - 28日間 × 13ヶ月 = 364日
+    - 月番号: 1-13（13の次は再び1）
+    
+    月の運命数:
+    - 月の運命人運 = (本質人運 + 月番号 - 1) % 13
+    - 月の運命地運 = (本質地運 + 月番号 - 1) % 13
+    - 月の天運 = 月番号そのもの
+    """
     birth = datetime.strptime(birthdate_str, "%Y-%m-%d")
     today = datetime.now()
     
-    # 誕生日からの経過日数
-    days_since_birth = (today - birth).days
+    # 今年の誕生日を計算
+    this_year_birthday = datetime(today.year, birth.month, birth.day)
     
-    # 28日周期での位置（0-27）
-    cycle_position = days_since_birth % 28
+    # 誕生日がまだ来ていない場合は去年の誕生日から計算
+    if today < this_year_birthday:
+        this_year_birthday = datetime(today.year - 1, birth.month, birth.day)
     
-    # 13段階に変換（28日を13段階で分ける）
-    # 28 ÷ 13 ≈ 2.15日 per stage
-    month_heaven = int((cycle_position * 13) / 28)  # 0-12
-    month_earth = int(((cycle_position + 9) * 13) / 28) % 13  # 0-12
-    month_human = int(((cycle_position + 18) * 13) / 28) % 13  # 0-12
+    # 誕生日当日は「瞑想日」なので、誕生日翌日から数える
+    days_since_birthday_next_day = (today - this_year_birthday).days
+    
+    # 誕生日当日（0日目）は瞑想日
+    if days_since_birthday_next_day == 0:
+        # 瞑想日の場合は特別な値を返す（前年の13の月として扱う）
+        month_number = 13
+    else:
+        # 誕生日翌日（1日目）から28日周期で月番号を計算
+        # 1-28日目 → 1の月、29-56日目 → 2の月...
+        month_number = ((days_since_birthday_next_day - 1) // 28) + 1
+        
+        # 13ヶ月を超えた場合は次の周期へ（364日を超えた場合）
+        if month_number > 13:
+            month_number = 1  # 新しい周期の1の月
+    
+    # 本質数を取得
+    essence_human, essence_earth = calculate_essence_numbers(birthdate_str)
+    
+    # 月の運命人運 = (本質人運 + 月番号 - 1) % 13
+    month_human = (essence_human + month_number - 1) % 13
+    
+    # 月の運命地運 = (本質地運 + 月番号 - 1) % 13
+    month_earth = (essence_earth + month_number - 1) % 13
+    
+    # 月の天運 = 月番号そのもの
+    month_heaven = month_number
     
     return month_heaven, month_earth, month_human
 

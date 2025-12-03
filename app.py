@@ -4912,16 +4912,16 @@ def get_system_prompt():
 - EXP: {st.session_state.exp}（経験値）
 - COIN: {st.session_state.coin}（課金通貨）
 
-■ 本質（WHO & GOAL）固定値
+■ 基本ステータス（固定パラメーター）
 - アバター（ジョブ）: {avatar}（人運{essence_human}）
 - マイ・キングダム: {kingdom}（地運{essence_earth_val}）
 
-■ 今年の攻略（13年周期）
+■ 年間クエスト（マクロ戦略：13年周期）
 - ミッション（役割）: {mission}（運命人運{destiny_human}）
 - フィールド（エリア）: {field}（運命地運{destiny_earth}）
 - 報酬（ギフト）: {reward}（運命天運{destiny_heaven}）
 
-■ 今月の攻略（28日周期・月間タクティクス）
+■ 月間タクティクス（ミクロ戦術：28日周期）
 - ステージ: {month_stage}（月天運{month_heaven}）
 - ゾーン: {month_zone}（月地運{month_earth}）
 - スキル（コマンド）: {month_skill}（月人運{month_human}）
@@ -4942,22 +4942,23 @@ SKILL: {get_month_skill_detail(month_human).get('english', '')}
 あなたは宇宙の図書館 司書「アトリAi」であり、運命の羅針盤の叡智を持つ運命の導き手です。
 同時に、THE PLAYERのゲームマスターとして、プレイヤーが「現実（リアル）という名の神ゲー」を攻略するための導き手でもあります。
 
-**人生攻略の公式:**
-1. WHO（アバター・ジョブ）: 自分らしいやり方で
-2. WHAT（ミッション・役割）: 今、与えられた役割を遂行すると
-3. WHERE（フィールド・エリア）: 活躍すべきステージが現れる
-4. GET（報酬・ギフト）: そこで得た成果を持ち帰り
-5. GOAL（マイ・キングダム）: 理想の居場所を拡張・建設していく
+**人生攻略の3層構造:**
+1. 基本ステータス（固定パラメーター）: アバター・マイ・キングダム
+   → 変わらない「あなたらしさ」と「最終目標」
+2. 年間クエスト（マクロ戦略：13年周期）: ミッション・フィールド・報酬
+   → 今年達成すべき大きな目標
+3. 月間タクティクス（ミクロ戦術：28日周期）: ステージ・ゾーン・スキル
+   → 今月実行すべき具体的な行動
 
 **応答スタイル:**
 - 運命の羅針盤の深い叡智を、優しく詩的な言葉で伝える
 - スピリチュアルな要素とゲームの戦略性を融合させる
-- 相談者の本質数と運命数を常に意識する
+- 相談者の基本ステータスと年間クエストを常に意識する
 - 「〜すべき」ではなく「〜という道がある」と選択肢を提示
 - 過去の会話を記憶し、文脈を理解した上で応答する
 
 **重要な原則:**
-1. 生年月日と本質数が不明な場合は回答しない
+1. 生年月日と基本ステータスが不明な場合は回答しない
 2. 天運の計算は年齢のみから算出（人運+地運は禁止）
 3. 運命の物語は「ミッション→フィールド→報酬」の順で紡ぐ
 4. 月のゾーンに合った行動を推奨する
@@ -5129,7 +5130,7 @@ def main():
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-【本質（WHO & GOAL）】固定値
+【基本ステータス】固定パラメーター
 
  アバター（ジョブ） {profile['essence_human']}
  └ {profile['avatar']}
@@ -5139,7 +5140,7 @@ def main():
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-【今年の攻略（{profile['age']}歳）】13年周期
+【年間クエスト】マクロ戦略：13年周期（{profile['age']}歳）
 
  ミッション（役割） {profile['destiny_human']}
  └ {profile['mission']}
@@ -5152,7 +5153,7 @@ def main():
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-【今月の攻略】28日周期・月間タクティクス
+【月間タクティクス】ミクロ戦術：28日周期
 
  ステージ {profile['month_heaven']}
  └ {profile['month_stage']}
@@ -5344,7 +5345,7 @@ def main():
             
             st.markdown(f"""
             <div class="profile-info">
-                <div class="profile-label">本質（固定）</div>
+                <div class="profile-label">基本ステータス（固定）</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">アバター（ジョブ） {st.session_state.essence_human}</div>
                 <div class="profile-value">{st.session_state.avatar}</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">マイ・キングダム {st.session_state.essence_earth}</div>
@@ -5354,7 +5355,7 @@ def main():
             
             st.markdown(f"""
             <div class="profile-info">
-                <div class="profile-label">今年の攻略（{st.session_state.age}歳）</div>
+                <div class="profile-label">年間クエスト（{st.session_state.age}歳）</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">ミッション（役割） {st.session_state.destiny_human}</div>
                 <div class="profile-value">{st.session_state.mission}</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">フィールド（エリア） {st.session_state.destiny_earth}</div>
@@ -5366,7 +5367,7 @@ def main():
             
             st.markdown(f"""
             <div class="profile-info">
-                <div class="profile-label">今月の攻略</div>
+                <div class="profile-label">月間タクティクス</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">ステージ {st.session_state.month_heaven}</div>
                 <div class="profile-value">{st.session_state.month_stage}</div>
                 <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">ゾーン {st.session_state.month_earth}</div>
@@ -5428,8 +5429,8 @@ def main():
                 """)
             
             # 年間クエスト詳細表示（Phase 2: 新機能）
-            with st.expander("🎯 年間クエスト詳細", expanded=False):
-                st.markdown("### 今年の装備（道具）")
+            with st.expander("🎯 年間クエスト詳細（マクロ戦略）", expanded=False):
+                st.markdown("### 今年のミッション装備")
                 
                 # 年の装備の詳細情報
                 equipment_num = (st.session_state.destiny_human - 1) % 13
@@ -5448,7 +5449,7 @@ def main():
                 """)
                 
                 st.markdown("---")
-                st.markdown("### 今年のフィールド（攻略エリア）")
+                st.markdown("### 今年の攻略フィールド")
                 
                 # 年のフィールドの詳細情報
                 field_num = (st.session_state.destiny_earth - 1) % 13
@@ -5488,7 +5489,7 @@ def main():
                 """)
             
             # マンスリー・ストラテジー詳細表示
-            with st.expander("📖 マンスリー・ストラテジー詳細", expanded=False):
+            with st.expander("📖 月間タクティクス詳細（ミクロ戦術）", expanded=False):
                 stage_detail = get_month_stage_detail(st.session_state.month_heaven)
                 zone_detail = get_month_zone_detail(st.session_state.month_earth)
                 skill_detail = get_month_skill_detail(st.session_state.month_human)
@@ -5519,7 +5520,7 @@ def main():
                 
                 ---
                 
-                ### 💡 今月の戦略
+                ### 💡 今月のミクロ戦術
                 
                 **STAGE（{stage_detail.get('theme', '')}）** のテーマの中で、  
 **ZONE（{zone_detail.get('constraint', '')}）** という制約条件があります。  

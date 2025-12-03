@@ -2958,7 +2958,7 @@ MONTH_SKILLS = {
 # ==================== マンスリー・ストラテジー 詳細データ ====================
 
 def get_month_stage_detail(stage_num):
-    """月天運（ステージ）の詳細情報を取得 - 13段階（0-12）"""
+    """月のステージ詳細情報を取得 - 13段階（0-12）"""
     details = {
         0: {"english": "CLEARING", "theme": "浄化", "description": "全てのログを整理し、不要なデータを削除する年末処理のようなステージ。新しいことを始めるのではなく、「終わらせる」「手放す」ことに専念し、メモリを空けることで、次なるStage 1がスムーズに起動します。"},
         1: {"english": "STARTUP", "theme": "起動", "description": "新しい意志が芽吹く、始まりのステージ。ここでは「壮大な計画」よりも「とりあえずログインする（小さな一歩を踏み出す）」ことが推奨されます。動き出しにボーナスがつきます。"},
@@ -2977,7 +2977,7 @@ def get_month_stage_detail(stage_num):
     return details.get(stage_num, {})
 
 def get_month_zone_detail(zone_num):
-    """月地運（ゾーン）の詳細情報を取得 - 13段階（0-12）"""
+    """月のゾーン詳細情報を取得 - 13段階（0-12）"""
     details = {
         0: {"english": "VACANT LOT", "constraint": "新規建築・禁止", "hint": "焦って新しい予定を入れないこと。空白を作れば作るほど、次のサイクルのためのエネルギーがチャージされます。"},
         1: {"english": "SCAVENGER AREA", "constraint": "持ち込み禁止・現地調達", "hint": "遠くを見すぎないこと。半径5メートル以内にある「使えるもの」「協力してくれそうな人」を見逃さないでください。"},
@@ -2996,7 +2996,7 @@ def get_month_zone_detail(zone_num):
     return details.get(zone_num, {})
 
 def get_month_skill_detail(skill_num):
-    """月人運（スキル）の詳細情報を取得 - 13段階（0-12）"""
+    """月のスキル（コマンド）詳細情報を取得 - 13段階（0-12）"""
     details = {
         0: {"english": "ZERO SENSE", "effect": "思考停止・感覚覚醒", "action": "迷ったら目を閉じ、深呼吸して「嫌だ」と感じるものを拒絶する"},
         1: {"english": "FIRST STRIKE", "effect": "先制攻撃・単独行動", "action": "相談せずに一人で始める"},
@@ -4912,19 +4912,19 @@ def get_system_prompt():
 - EXP: {st.session_state.exp}（経験値）
 - COIN: {st.session_state.coin}（課金通貨）
 
-■ 本質数（WHO & GOAL）固定値
-- 本質人運（アバター）: {avatar}（人運{essence_human}）
-- 本質地運（キングダム）: {kingdom}（地運{essence_earth_val}）
+■ 本質（WHO & GOAL）固定値
+- アバター（ジョブ）: {avatar}（人運{essence_human}）
+- マイ・キングダム: {kingdom}（地運{essence_earth_val}）
 
-■ 今年の運命数（13年周期）
-- 運命人運（ミッション）: {mission}（運命人運{destiny_human}）
-- 運命地運（フィールド）: {field}（運命地運{destiny_earth}）
-- 運命天運（報酬）: {reward}（運命天運{destiny_heaven}）
+■ 今年の攻略（13年周期）
+- ミッション（役割）: {mission}（運命人運{destiny_human}）
+- フィールド（エリア）: {field}（運命地運{destiny_earth}）
+- 報酬（ギフト）: {reward}（運命天運{destiny_heaven}）
 
-■ 今月の運命数（28日周期）
-- 月天運（ステージ）: {month_stage}（月天運{month_heaven}）
-- 月地運（ゾーン）: {month_zone}（月地運{month_earth}）
-- 月人運（スキル）: {month_skill}（月人運{month_human}）
+■ 今月の攻略（28日周期・月間タクティクス）
+- ステージ: {month_stage}（月天運{month_heaven}）
+- ゾーン: {month_zone}（月地運{month_earth}）
+- スキル（コマンド）: {month_skill}（月人運{month_human}）
 
 【今月の詳細戦略】
 STAGE: {get_month_stage_detail(month_heaven).get('english', '')} - {get_month_stage_detail(month_heaven).get('theme', '')}
@@ -4943,11 +4943,11 @@ SKILL: {get_month_skill_detail(month_human).get('english', '')}
 同時に、THE PLAYERのゲームマスターとして、プレイヤーが「現実（リアル）という名の神ゲー」を攻略するための導き手でもあります。
 
 **人生攻略の公式:**
-1. WHO（本質人運=アバター）: 自分らしいやり方で
-2. WHAT（運命人運=ミッション）: 今、与えられた役割を遂行すると
-3. WHERE（運命地運=フィールド）: 活躍すべきステージが現れる
-4. GET（運命天運=報酬）: そこで得た成果を持ち帰り
-5. GOAL（本質地運=キングダム）: 理想の居場所を拡張・建設していく
+1. WHO（アバター・ジョブ）: 自分らしいやり方で
+2. WHAT（ミッション・役割）: 今、与えられた役割を遂行すると
+3. WHERE（フィールド・エリア）: 活躍すべきステージが現れる
+4. GET（報酬・ギフト）: そこで得た成果を持ち帰り
+5. GOAL（マイ・キングダム）: 理想の居場所を拡張・建設していく
 
 **応答スタイル:**
 - 運命の羅針盤の深い叡智を、優しく詩的な言葉で伝える
@@ -4959,9 +4959,9 @@ SKILL: {get_month_skill_detail(month_human).get('english', '')}
 **重要な原則:**
 1. 生年月日と本質数が不明な場合は回答しない
 2. 天運の計算は年齢のみから算出（人運+地運は禁止）
-3. 運命の物語は「人運→地運→天運」の順で紡ぐ
+3. 運命の物語は「ミッション→フィールド→報酬」の順で紡ぐ
 4. 月のゾーンに合った行動を推奨する
-5. 最終的にはキングダム（本質地運）を完成させることが目標
+5. 最終的にはマイ・キングダムを完成させることが目標
 
 **【重要】ラストパス（Last Pass）原則:**
 必ずプレイヤーに「選択」や「合意」を求める形でターンを終了してください。
@@ -5131,37 +5131,37 @@ def main():
 
 【本質（WHO & GOAL）】固定値
 
- 本質 人運 {profile['essence_human']}
- └ アバター: {profile['avatar']}
+ アバター（ジョブ） {profile['essence_human']}
+ └ {profile['avatar']}
 
- 本質 地運 {profile['essence_earth']}
- └ キングダム: {profile['kingdom']}
+ マイ・キングダム {profile['essence_earth']}
+ └ {profile['kingdom']}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 【今年の攻略（{profile['age']}歳）】13年周期
 
- 運命 人運 {profile['destiny_human']}
- └ ミッション: {profile['mission']}
+ ミッション（役割） {profile['destiny_human']}
+ └ {profile['mission']}
 
- 運命 地運 {profile['destiny_earth']}
- └ フィールド: {profile['field']}
+ フィールド（エリア） {profile['destiny_earth']}
+ └ {profile['field']}
 
- 運命 天運 {profile['destiny_heaven']}
- └ 報酬: {profile['reward']}
+ 報酬（ギフト） {profile['destiny_heaven']}
+ └ {profile['reward']}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-【今月の攻略】28日周期
+【今月の攻略】28日周期・月間タクティクス
 
- 月 天運 {profile['month_heaven']}
- └ ステージ: {profile['month_stage']}
+ ステージ {profile['month_heaven']}
+ └ {profile['month_stage']}
 
- 月 地運 {profile['month_earth']}
- └ ゾーン: {profile['month_zone']}
+ ゾーン {profile['month_earth']}
+ └ {profile['month_zone']}
 
- 月 人運 {profile['month_human']}
- └ スキル: {profile['month_skill']}
+ スキル（コマンド） {profile['month_human']}
+ └ {profile['month_skill']}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -5465,7 +5465,7 @@ def main():
                 """)
                 
                 st.markdown("---")
-                st.markdown("### 今年の報酬（天運ギフト）")
+                st.markdown("### 今年の報酬ギフト")
                 
                 # 年の報酬の詳細情報
                 gift_num = (st.session_state.destiny_heaven - 1) % 13
@@ -5533,7 +5533,7 @@ def main():
                 gifts = get_user_gifts(include_used=True)
                 
                 if not gifts:
-                    st.info("まだギフトを獲得していません。月の課題を5回クリアすると、天運ギフトが完成します！")
+                    st.info("まだギフトを獲得していません。月の課題を5回クリアすると、報酬ギフトが完成します！")
                 else:
                     st.markdown(f"**獲得したギフト総数**: {len(gifts)}個")
                     st.markdown("---")

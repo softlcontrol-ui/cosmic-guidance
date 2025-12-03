@@ -5670,12 +5670,14 @@ def main():
         if len(st.session_state.messages) > 0:
             # スクロールが必要な場合のみJavaScriptを実行
             should_scroll = st.session_state.get('should_scroll', False)
+            # 選択肢が表示されている場合も最新メッセージにスクロール
+            has_choice = st.session_state.get('waiting_for_yes', False)
             
             st.markdown("""
             <div id="latest-message" style="height: 1px;"></div>
             """, unsafe_allow_html=True)
             
-            if should_scroll:
+            if should_scroll or has_choice:
                 # スクロール実行（複数回実行で確実に）
                 st.markdown("""
                 <script>
@@ -5766,7 +5768,7 @@ def main():
                     save_to_supabase()
                     st.rerun()
             
-            # 選択肢にスクロール
+            # 選択肢にスクロール（会話履歴スクロールの後に実行）
             st.markdown("""
             <script>
                 function scrollToChoice() {
@@ -5776,22 +5778,24 @@ def main():
                     }
                 }
                 
-                // 即座に実行
-                scrollToChoice();
+                // 会話履歴のスクロールが完了してから選択肢にスクロール
+                // 少し遅延させて実行（1200ms以降）
+                setTimeout(scrollToChoice, 1200);
+                setTimeout(scrollToChoice, 1500);
+                setTimeout(scrollToChoice, 1800);
+                setTimeout(scrollToChoice, 2000);
                 
-                // 複数のタイミングで再実行（確実にスクロールするため）
-                setTimeout(scrollToChoice, 100);
-                setTimeout(scrollToChoice, 300);
-                setTimeout(scrollToChoice, 500);
-                setTimeout(scrollToChoice, 800);
-                
-                // DOMContentLoaded後にも実行
+                // DOMContentLoaded後にも実行（遅延あり）
                 if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', scrollToChoice);
+                    document.addEventListener('DOMContentLoaded', function() {
+                        setTimeout(scrollToChoice, 1200);
+                    });
                 }
                 
-                // load後にも実行
-                window.addEventListener('load', scrollToChoice);
+                // load後にも実行（遅延あり）
+                window.addEventListener('load', function() {
+                    setTimeout(scrollToChoice, 1200);
+                });
             </script>
             """, unsafe_allow_html=True)
         

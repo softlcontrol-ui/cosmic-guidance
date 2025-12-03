@@ -5714,6 +5714,9 @@ def main():
         
         # YESボタンの表示（pending_questがある場合）
         if st.session_state.get('waiting_for_yes', False) and st.session_state.pending_quest:
+            # 選択肢アンカー
+            st.markdown('<div id="quest-choice-anchor"></div>', unsafe_allow_html=True)
+            
             st.markdown("---")
             quest = st.session_state.pending_quest
             
@@ -5762,6 +5765,35 @@ def main():
                     st.session_state.should_scroll = True  # スクロールフラグ
                     save_to_supabase()
                     st.rerun()
+            
+            # 選択肢にスクロール
+            st.markdown("""
+            <script>
+                function scrollToChoice() {
+                    const element = document.getElementById('quest-choice-anchor');
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+                
+                // 即座に実行
+                scrollToChoice();
+                
+                // 複数のタイミングで再実行（確実にスクロールするため）
+                setTimeout(scrollToChoice, 100);
+                setTimeout(scrollToChoice, 300);
+                setTimeout(scrollToChoice, 500);
+                setTimeout(scrollToChoice, 800);
+                
+                // DOMContentLoaded後にも実行
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', scrollToChoice);
+                }
+                
+                // load後にも実行
+                window.addEventListener('load', scrollToChoice);
+            </script>
+            """, unsafe_allow_html=True)
         
         # アクティブなクエストがある場合の表示
         if st.session_state.active_quest and not st.session_state.get('show_report_form', False):

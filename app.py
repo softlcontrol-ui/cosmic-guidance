@@ -5345,9 +5345,9 @@ def main():
             st.markdown(f"""
             <div class="profile-info">
                 <div class="profile-label">本質（固定）</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">本質 人運 {st.session_state.essence_human}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">アバター（ジョブ） {st.session_state.essence_human}</div>
                 <div class="profile-value">{st.session_state.avatar}</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">本質 地運 {st.session_state.essence_earth}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">マイ・キングダム {st.session_state.essence_earth}</div>
                 <div class="profile-value">{st.session_state.kingdom}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -5355,11 +5355,11 @@ def main():
             st.markdown(f"""
             <div class="profile-info">
                 <div class="profile-label">今年の攻略（{st.session_state.age}歳）</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">運命 人運 {st.session_state.destiny_human}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">ミッション（役割） {st.session_state.destiny_human}</div>
                 <div class="profile-value">{st.session_state.mission}</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 地運 {st.session_state.destiny_earth}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">フィールド（エリア） {st.session_state.destiny_earth}</div>
                 <div class="profile-value">{st.session_state.field}</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">運命 天運 {st.session_state.destiny_heaven}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">報酬（ギフト） {st.session_state.destiny_heaven}</div>
                 <div class="profile-value">{st.session_state.reward}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -5367,11 +5367,11 @@ def main():
             st.markdown(f"""
             <div class="profile-info">
                 <div class="profile-label">今月の攻略</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">月 天運 {st.session_state.month_heaven}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-bottom: 0.2rem;">ステージ {st.session_state.month_heaven}</div>
                 <div class="profile-value">{st.session_state.month_stage}</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">月 地運 {st.session_state.month_earth}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">ゾーン {st.session_state.month_earth}</div>
                 <div class="profile-value">{st.session_state.month_zone}</div>
-                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">月 人運 {st.session_state.month_human}</div>
+                <div class="profile-value" style="font-size: 0.85rem; color: #c0c0c0; margin-top: 0.8rem; margin-bottom: 0.2rem;">スキル（コマンド） {st.session_state.month_human}</div>
                 <div class="profile-value">{st.session_state.month_skill}</div>
             </div>
             """, unsafe_allow_html=True)
